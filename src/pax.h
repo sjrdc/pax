@@ -88,7 +88,7 @@ namespace pax
 	using value_type = T;
 
 	value_argument(const std::string_view& n);
-	T& get_value() const;
+	const T& get_value() const;
 	void bind(T*);
 	void set_default_value(T d);
 	void print_help(std::ostream&) const override;
@@ -109,6 +109,12 @@ namespace pax
     void value_argument<T>::bind(T* t)
     {
 	bound_variable = t;
+    }
+
+    template <typename T>
+    const typename value_argument<T>::value_type& value_argument<T>::get_value() const
+    {
+	return value;
     }
 
     template <typename T>

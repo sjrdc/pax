@@ -2,16 +2,18 @@
 
 #include <gtest/gtest.h>
 
-TEST(piet, jan)
+TEST(Pax, CanParseIntegralValueArg)
 {
-    std::cout << "Hello, world!\n";
-    
-    pax::command_line cmd("piet");
-    cmd.add_flag_argument("piet");
-    cmd.add_value_argument<int>("some integer")
+    pax::command_line cmd("cmd");
+
+    auto arg = cmd.add_value_argument<int>("some integer")
 	.set_tag("-i")
 	.set_long_tag("--integer");
-    cmd.print_help(std::cout);
+
+    std::vector<std::string> args = {"piet", "-i", "5"};
+    cmd.parse(args);
+
+    EXPECT_EQ(5, arg.get_value());
 }
 
 int main(int argc, char** argv)

@@ -21,40 +21,15 @@ namespace pax
 	    name(n)
 	{
 	}
+	const std::string& get_name() const;
+	T& set_name(const std::string_view&);
 
-	const std::string& get_name() const
-	{
-	    return name;
-	}
-	
-	T& set_name(const std::string_view& n)
-	{
-	    name = n;
-	    return this_as_derived();
-	}
+	const std::string& get_tag() const;
+	T& set_tag(const std::string_view&);
 
-	const std::string& get_tag() const
-	{
-	    return tag;
-	}
-	
-	T& set_tag(const std::string_view& t)
-	{
-	    tag = t;
-	    return this_as_derived();
-	}
+	const std::string& get_long_tag() const;
+	T& set_long_tag(const std::string_view&);
 
-	const std::string& get_long_tag() const
-	{
-	    return long_tag;
-	}
-
-	T& set_long_tag(const std::string_view& t)
-	{
-	    long_tag = t;
-	    return this_as_derived();
-	}
-	
     private:
 	T& this_as_derived()
 	{
@@ -65,6 +40,45 @@ namespace pax
 	std::string tag;
 	std::string long_tag;
     };
+
+    template <typename T>
+    const std::string& argument_base<T>::get_name() const
+    {
+	return name;
+    }
+    
+    template <typename T>
+    T& argument_base<T>::set_name(const std::string_view& n)
+    {
+	name = n;
+	return this_as_derived();
+    }
+    
+    template <typename T>
+    const std::string& argument_base<T>::get_tag() const
+    {
+	return tag;
+    }
+    
+    template <typename T>
+    T& argument_base<T>::set_tag(const std::string_view& t)
+    {
+	tag = t;
+	return this_as_derived();
+    }
+    
+    template <typename T>
+    const std::string& argument_base<T>::get_long_tag() const
+    {
+	return long_tag;
+    }
+    
+    template <typename T>
+    T& argument_base<T>::set_long_tag(const std::string_view& t)
+    {
+	long_tag = t;
+	return this_as_derived();
+    }
 
     template <typename T>
     class value_argument : public argument_base<value_argument<T>>
@@ -78,6 +92,7 @@ namespace pax
 	void bind(T*);
 	void set_default_value(T d);
 	void print_help(std::ostream&) const override;
+
     private:
 	value_type value{};
 	std::optional<value_type> default_value;

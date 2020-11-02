@@ -11,5 +11,6 @@ int main(int argc, char** argv)
 	.set_long_tag("--integer");
     cmd.print_help(std::cout);
     cmd.parse(argc, argv);
+    
     return 0;
 }

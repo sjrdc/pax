@@ -143,14 +143,22 @@ namespace pax
 	if (std::distance(begin, end) > 1 && (*begin == base::get_tag() || *begin == base::get_long_tag()))
 	{
 	    ++begin;
-	    std::istringstream stream(*begin);
-	    T t;
-	    stream >> t;
-	    if (!stream.eof() || stream.fail())
+	    if constexpr (std::is_same_v<std::string, T>)
 	    {
-		throw std::runtime_error("could not parse from" + *begin);
+		value = *begin;
 	    }
-	    value = t;
+	    else
+	    {
+		std::istringstream stream(*begin);
+		T t;
+		stream >> t;
+		if (!stream.eof() || stream.fail())
+		{
+		    throw std::runtime_error("could not parse from '" + *begin + "'");
+		}
+		value = t;
+	    }
+	    
 	}
     }
     

@@ -2,10 +2,18 @@
 
 #include <gtest/gtest.h>
 
-TEST(Pax, CanParseIntegralValueArg)
+class Pax : public ::testing::Test
 {
-    pax::command_line cmd("cmd");
+protected:
+    void SetUp() override
+    {
+    }
 
+    pax::command_line cmd {"cmd"};    
+};
+
+TEST_F(Pax, CanParseIntegralValueArg)
+{
     auto& arg = cmd.add_value_argument<int>("some integer")
 	.set_tag("-i")
 	.set_long_tag("--integer");
@@ -17,11 +25,9 @@ TEST(Pax, CanParseIntegralValueArg)
     EXPECT_EQ(5, arg.get_value());
 }
 
-TEST(Pax, CanParseFloatingPointValueArg)
+TEST_F(Pax, CanParseFloatingPointValueArg)
 {
-    pax::command_line cmd("cmd");
-
-    auto& arg = cmd.add_value_argument<float>("some integer")
+    auto& arg = cmd.add_value_argument<float>("some float")
 	.set_tag("-f")
 	.set_long_tag("--float");
 
@@ -30,6 +36,19 @@ TEST(Pax, CanParseFloatingPointValueArg)
     cmd.parse(args);
 
     EXPECT_EQ(f, arg.get_value());
+}
+
+TEST_F(Pax, CanParseStringArg)
+{
+    auto& arg = cmd.add_value_argument<std::string>("some string")
+	.set_tag("-s")
+	.set_long_tag("--string");
+
+    static const std::string s("lorem ipsum");
+    std::vector<std::string> args = {"piet", "-s", s};
+    cmd.parse(args);
+
+    EXPECT_EQ(s, arg.get_value());
 }
 
 int main(int argc, char** argv)

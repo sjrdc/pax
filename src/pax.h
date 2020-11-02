@@ -95,7 +95,7 @@ namespace pax
 
 	value_argument(const std::string_view& n);
 	const T& get_value() const;
-	void bind(T*);
+	value_argument<T>& bind(T*);
 	void set_default_value(T d);
 	void print_help(std::ostream&) const override;
 	void parse(std::span<const std::string>::iterator&, 
@@ -113,9 +113,10 @@ namespace pax
     }
 
     template <typename T>
-    void value_argument<T>::bind(T* t)
+    value_argument<T>& value_argument<T>::bind(T* t)
     {
 	bound_variable = t;
+	return *this;
     }
 
     template <typename T>
@@ -172,7 +173,7 @@ namespace pax
 	void print_help(std::ostream&) const override;
 	value_type& get_value() const;
 	void set_default_value(std::span<T>);
-	void bind(std::vector<T>*);
+	multi_value_argument<T>& bind(std::vector<T>*);
 	void parse(std::span<const std::string>::iterator&, 
 		   const std::span<const std::string>::iterator&) override;
     private:
@@ -194,7 +195,7 @@ namespace pax
     }
 
     template <typename T>
-    void multi_value_argument<T>::bind(std::vector<T>* v)
+    multi_value_argument<T>& multi_value_argument<T>::bind(std::vector<T>* v)
     {
 	bound_variable = v;
     }
@@ -211,7 +212,7 @@ namespace pax
 	using base = argument_base<flag_argument>;
 	
 	flag_argument(const std::string_view&);
-	void bind(bool*);
+	flag_argument& bind(bool*);
 	bool get_value() const;
 	void print_help(std::ostream&) const override;
 	void parse(std::span<const std::string>::iterator&, 
@@ -231,9 +232,10 @@ namespace pax
 	o << get_name() << "\n";
     }
 
-    void flag_argument::bind(bool* b)
+    flag_argument& flag_argument::bind(bool* b)
     {
 	bound_flag = b;
+	return *this;
     }
 
     void flag_argument::parse(std::span<const std::string>::iterator& begin, 

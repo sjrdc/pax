@@ -158,7 +158,6 @@ namespace pax
 		}
 		value = t;
 	    }
-	    
 	}
     }
     
@@ -237,9 +236,14 @@ namespace pax
 	bound_flag = b;
     }
 
-    void flag_argument::parse(std::span<const std::string>::iterator&, 
-			      const std::span<const std::string>::iterator&)
+    void flag_argument::parse(std::span<const std::string>::iterator& begin, 
+			      const std::span<const std::string>::iterator& end)
     {
+	if (std::distance(begin, end) >= 1 && 
+	    (*begin == base::get_tag() || *begin == base::get_long_tag()))
+	{
+	    value = true;
+	}
     }
 
     bool flag_argument::get_value() const
@@ -308,8 +312,6 @@ namespace pax
 	auto end = args.cend();
 	for (auto argv = args.cbegin(); argv != end; ++argv)
 	{
-	    std::cout << __PRETTY_FUNCTION__ << "\n" << *argv << std::endl;
-	
 	    for (auto& argument : arguments)
 	    {
 		argument->parse(argv, end);

@@ -203,6 +203,7 @@ namespace pax
 
 	void parse(std::span<std::string>);
 	void parse(int argc, char** argv);
+
     private:
 	std::string name;
 	std::string description;

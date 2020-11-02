@@ -1,16 +1,21 @@
 #include "pax.h"
 
-int main(int argc, char** argv)
+#include <gtest/gtest.h>
+
+TEST(piet, jan)
 {
     std::cout << "Hello, world!\n";
-
-    pax::command_line cmd(argv[0]);
+    
+    pax::command_line cmd("piet");
     cmd.add_flag_argument("piet");
     cmd.add_value_argument<int>("some integer")
 	.set_tag("-i")
 	.set_long_tag("--integer");
     cmd.print_help(std::cout);
-    cmd.parse(argc, argv);
-    
-    return 0;
+}
+
+int main(int argc, char** argv)
+{
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

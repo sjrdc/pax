@@ -10,7 +10,8 @@ TEST(Pax, CanParseIntegralValueArg)
 	.set_tag("-i")
 	.set_long_tag("--integer");
 
-    std::vector<std::string> args = {"piet", "-i", "5"};
+    constexpr auto i = 5;
+    std::vector<std::string> args = {"piet", "-i", std::to_string(i)};
     cmd.parse(args);
 
     EXPECT_EQ(5, arg.get_value());

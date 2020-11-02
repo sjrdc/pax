@@ -242,6 +242,11 @@ namespace pax
     {
     }
 
+    bool flag_argument::get_value() const
+    {
+	return value;
+    }
+
     class command_line
     {
     public:
@@ -255,7 +260,7 @@ namespace pax
 
 	void print_help(std::ostream&);
 
-	void parse(std::span<std::string>);
+	void parse(std::span<const std::string>);
 	void parse(int argc, char** argv);
 
     private:
@@ -298,7 +303,7 @@ namespace pax
 	return *arg;
     }
 
-    inline void command_line::parse(std::span<std::string> args)
+    inline void command_line::parse(std::span<const std::string> args)
     {
 	auto end = args.cend();
 	for (auto argv = args.cbegin(); argv != end; ++argv)

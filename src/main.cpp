@@ -45,10 +45,24 @@ TEST_F(Pax, CanParseStringArg)
 	.set_long_tag("--string");
 
     static const std::string s("lorem ipsum");
-    std::vector<std::string> args = {"piet", "-s", s};
+    const std::vector<std::string> args = {"piet", "-s", s};
     cmd.parse(args);
 
     EXPECT_EQ(s, arg.get_value());
+}
+
+TEST_F(Pax, CanParseFlagArg)
+{
+    auto& arg = cmd.add_flag_argument("flag")
+	.set_tag("-f");
+    
+    std::vector<std::string> args = {"piet"};
+    cmd.parse(args);
+    EXPECT_FALSE(arg.get_value());
+
+    args = {"piet", "-f"};
+    cmd.parse(args);
+    EXPECT_TRUE(arg.get_value());	
 }
 
 int main(int argc, char** argv)

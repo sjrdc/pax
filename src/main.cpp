@@ -6,7 +6,7 @@ TEST(Pax, CanParseIntegralValueArg)
 {
     pax::command_line cmd("cmd");
 
-    auto arg = cmd.add_value_argument<int>("some integer")
+    auto& arg = cmd.add_value_argument<int>("some integer")
 	.set_tag("-i")
 	.set_long_tag("--integer");
 

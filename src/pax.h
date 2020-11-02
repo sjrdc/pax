@@ -1,6 +1,7 @@
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <string_view>
 #include <vector>
 #include <span>
@@ -11,6 +12,8 @@ namespace pax
     {
     public:
 	virtual void print_help(std::ostream&) const = 0;
+	virtual void parse(std::span<const std::string>::iterator&, 
+			   const std::span<const std::string>::iterator&) = 0;
     };
     
     template <typename T>
@@ -31,10 +34,7 @@ namespace pax
 	T& set_long_tag(const std::string_view&);
 
     private:
-	T& this_as_derived()
-	{
-	    return *reinterpret_cast<T*>(this);
-	}
+	T& this_as_derived();
 	
 	std::string name;
 	std::string tag;
@@ -81,6 +81,12 @@ namespace pax
     }
 
     template <typename T>
+    T& argument_base<T>::this_as_derived()
+    {
+	return *reinterpret_cast<T*>(this);
+    }
+
+    template <typename T>
     class value_argument : public argument_base<value_argument<T>>
     {
     public:
@@ -92,7 +98,8 @@ namespace pax
 	void bind(T*);
 	void set_default_value(T d);
 	void print_help(std::ostream&) const override;
-
+	void parse(std::span<const std::string>::iterator&, 
+		   const std::span<const std::string>::iterator&) override;
     private:
 	value_type value{};
 	std::optional<value_type> default_value;
@@ -128,6 +135,24 @@ namespace pax
     {
 	o << base::get_name() << "\n";
     }
+
+    template <typename T>
+    void value_argument<T>::parse(std::span<const std::string>::iterator& begin, 
+		   const std::span<const std::string>::iterator& end)
+    {
+	if (std::distance(begin, end) > 1 && (*begin == base::get_tag() || *begin == base::get_long_tag()))
+	{
+	    ++begin;
+	    std::istringstream stream(*begin);
+	    T t;
+	    stream >> t;
+	    if (!stream.eof() || stream.fail())
+	    {
+		throw std::runtime_error("could not parse from" + *begin);
+	    }
+	    value = t;
+	}
+    }
     
     template <typename T>
     class multi_value_argument : public argument_base<multi_value_argument<T>>
@@ -141,6 +166,8 @@ namespace pax
 	value_type& get_value() const;
 	void set_default_value(std::span<T>);
 	void bind(std::vector<T>*);
+	void parse(std::span<const std::string>::iterator&, 
+		   const std::span<const std::string>::iterator&) override;
     private:
 	value_type& value;
 	std::optional<value_type> default_value;
@@ -164,7 +191,13 @@ namespace pax
     {
 	bound_variable = v;
     }
-	
+
+    template <typename T>
+    void multi_value_argument<T>::parse(std::span<const std::string>::iterator&, 
+					const std::span<const std::string>::iterator&)
+    {
+    }
+
     class flag_argument : public argument_base<flag_argument>
     {
     public:
@@ -174,6 +207,8 @@ namespace pax
 	void bind(bool*);
 	bool get_value() const;
 	void print_help(std::ostream&) const override;
+	void parse(std::span<const std::string>::iterator&, 
+		   const std::span<const std::string>::iterator&) override;
     private:
 	bool value = false;
 	bool* bound_flag = nullptr;
@@ -193,7 +228,12 @@ namespace pax
     {
 	bound_flag = b;
     }
-    
+
+    void flag_argument::parse(std::span<const std::string>::iterator&, 
+			      const std::span<const std::string>::iterator&)
+    {
+    }
+
     class command_line
     {
     public:
@@ -227,7 +267,7 @@ namespace pax
     {
     }
 
-    flag_argument& command_line::add_flag_argument(const std::string_view& name)
+    inline flag_argument& command_line::add_flag_argument(const std::string_view& name)
     {
 	auto arg = std::make_shared<flag_argument>(name);
 	arguments.push_back(arg);
@@ -250,18 +290,27 @@ namespace pax
 	return *arg;
     }
 
-    void command_line::parse(std::span<std::string>)
+    inline void command_line::parse(std::span<std::string> args)
     {
-	std::cout << __PRETTY_FUNCTION__ << "\n";
+	auto end = args.cend();
+	for (auto argv = args.cbegin(); argv != end; ++argv)
+	{
+	    std::cout << __PRETTY_FUNCTION__ << "\n" << *argv << std::endl;
+	
+	    for (auto& argument : arguments)
+	    {
+		argument->parse(argv, end);
+	    }
+	}
     }
 
-    void command_line::parse(int argc, char** argv)
+    inline void command_line::parse(int argc, char** argv)
     {
 	std::vector<std::string> v(argv, argv + argc);
 	parse(v);
     }
     
-    void command_line::print_help(std::ostream& o)
+    inline void command_line::print_help(std::ostream& o)
     {
 	o << name 
 	  << ((!description.empty()) ?  " - " + description : "")

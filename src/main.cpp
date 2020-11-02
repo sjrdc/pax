@@ -25,6 +25,21 @@ TEST_F(Pax, CanParseIntegralValueArg)
     EXPECT_EQ(5, arg.get_value());
 }
 
+TEST_F(Pax, CanStoreIntegralValueInBoundVariable)
+{
+    int q;
+    auto& arg = cmd.add_value_argument<int>("some integer")
+	.set_tag("-i")
+	.set_long_tag("--integer")
+	.bind(&q);
+
+    constexpr auto i = 5;
+    std::vector<std::string> args = {"piet", "-i", std::to_string(i)};
+    cmd.parse(args);
+
+    EXPECT_EQ(q, i);
+}
+
 TEST_F(Pax, CanParseFloatingPointValueArg)
 {
     auto& arg = cmd.add_value_argument<float>("some float")
@@ -35,20 +50,7 @@ TEST_F(Pax, CanParseFloatingPointValueArg)
     std::vector<std::string> args = {"piet", "-f", std::to_string(f)};
     cmd.parse(args);
 
-    EXPECT_EQ(f, arg.get_value());
-}
-
-TEST_F(Pax, CanParseStringArg)
-{
-    auto& arg = cmd.add_value_argument<std::string>("some string")
-	.set_tag("-s")
-	.set_long_tag("--string");
-
-    static const std::string s("lorem ipsum");
-    const std::vector<std::string> args = {"piet", "-s", s};
-    cmd.parse(args);
-
-    EXPECT_EQ(s, arg.get_value());
+    EXPECT_FLOAT_EQ(f, arg.get_value());
 }
 
 TEST_F(Pax, CanParseFlagArg)

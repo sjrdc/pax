@@ -94,6 +94,7 @@ namespace pax
 	using value_type = T;
 
 	value_argument(const std::string_view& n);
+
 	const T& get_value() const;
 	value_argument<T>& bind(T*);
 	void set_default_value(T d);
@@ -101,7 +102,7 @@ namespace pax
 	void parse(std::span<const std::string>::iterator&, 
 		   const std::span<const std::string>::iterator&) override;
     private:
-	value_type value{};
+	std::optional<value_type> value{};
 	std::optional<value_type> default_value;
 	value_type* bound_variable = nullptr;
     };
@@ -122,7 +123,21 @@ namespace pax
     template <typename T>
     const typename value_argument<T>::value_type& value_argument<T>::get_value() const
     {
-	return value;
+	if (value)
+	{
+	    return *value;
+	}
+	else
+	{
+	    if (default_value)
+	    {
+		return *default_value;
+	    }
+	    else
+	    {
+		throw std::runtime_error("argument '" + base::get_name() + "' does not have a value");
+	    }
+	}
     }
 
     template <typename T>
@@ -158,6 +173,11 @@ namespace pax
 		    throw std::runtime_error("could not parse from '" + *begin + "'");
 		}
 		value = t;
+	    }
+
+	    if (bound_variable != nullptr)
+	    {
+		*bound_variable = *value;
 	    }
 	}
     }

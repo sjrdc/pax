@@ -1,18 +1,19 @@
-#include "pax.h"
-#include <filesystem>
-#include <gtest/gtest.h>
+#include "px.h"
 
-class Pax : public ::testing::Test
+#include <gtest/gtest.h>
+#include <filesystem>
+
+class Px : public ::testing::Test
 {
 protected:
     void SetUp() override
     {
     }
 
-    pax::command_line cmd {"cmd"};    
+    px::command_line cmd {"cmd"};    
 };
 
-TEST_F(Pax, CanParseIntegralValueArg)
+TEST_F(Px, CanParseIntegralValueArg)
 {
     auto& arg = cmd.add_value_argument<int>("some integer")
 	.set_tag("-i")
@@ -25,7 +26,7 @@ TEST_F(Pax, CanParseIntegralValueArg)
     EXPECT_EQ(5, arg.get_value());
 }
 
-TEST_F(Pax, CanStoreIntegralValueInBoundVariable)
+TEST_F(Px, CanStoreIntegralValueInBoundVariable)
 {
     int q;
     auto& arg = cmd.add_value_argument<int>("some integer")
@@ -40,7 +41,7 @@ TEST_F(Pax, CanStoreIntegralValueInBoundVariable)
     EXPECT_EQ(q, i);
 }
 
-TEST_F(Pax, CanParseFloatingPointValueArg)
+TEST_F(Px, CanParseFloatingPointValueArg)
 {
     auto& arg = cmd.add_value_argument<float>("some float")
 	.set_tag("-f")
@@ -53,13 +54,13 @@ TEST_F(Pax, CanParseFloatingPointValueArg)
     EXPECT_FLOAT_EQ(f, arg.get_value());
 }
 
-TEST_F(Pax, FlagArgValueIsFalseByDefault)
+TEST_F(Px, FlagArgValueIsFalseByDefault)
 {
     auto& arg = cmd.add_flag_argument("flag");
     EXPECT_FALSE(arg.get_value());
 }
 
-TEST_F(Pax, CanParseFlagArg)
+TEST_F(Px, CanParseFlagArg)
 {
     auto& arg = cmd.add_flag_argument("flag")
 	.set_tag("-f");
@@ -73,7 +74,7 @@ TEST_F(Pax, CanParseFlagArg)
     EXPECT_TRUE(arg.get_value());	
 }
 
-TEST_F(Pax, ThrowsOnSettingDefaultForRequiredArg)
+TEST_F(Px, ThrowsOnSettingDefaultForRequiredArg)
 {
     constexpr auto default_float = 1.f; 
     auto& arg = cmd.add_value_argument<float>("some float")
@@ -82,7 +83,7 @@ TEST_F(Pax, ThrowsOnSettingDefaultForRequiredArg)
     EXPECT_THROW(arg.set_default(default_float), std::logic_error);   
 }
 
-TEST_F(Pax, ThrowsOnSettingRequiredForArgWithDefault)
+TEST_F(Px, ThrowsOnSettingRequiredForArgWithDefault)
 {
     constexpr auto default_float = 1.f; 
     auto& arg = cmd.add_value_argument<float>("some float")
@@ -91,7 +92,7 @@ TEST_F(Pax, ThrowsOnSettingRequiredForArgWithDefault)
     EXPECT_THROW(arg.set_required(true), std::logic_error);   
 }
 
-TEST_F(Pax, DefaultValueIsPropagatedToBoundVariable)
+TEST_F(Px, DefaultValueIsPropagatedToBoundVariable)
 {
     constexpr auto default_int = 1; 
     int q = 0;
@@ -114,7 +115,7 @@ TEST_F(Pax, DefaultValueIsPropagatedToBoundVariable)
     EXPECT_EQ(q, default_int + 1);
 }
 
-TEST_F(Pax, RequiredArgWithoutValueIsInvalid)
+TEST_F(Px, RequiredArgWithoutValueIsInvalid)
 {
     auto& arg = cmd.add_value_argument<int>("some integer")
 	.set_tag("-i")
@@ -130,7 +131,7 @@ TEST_F(Pax, RequiredArgWithoutValueIsInvalid)
     EXPECT_TRUE(arg.is_valid());    
 }
 
-TEST_F(Pax, UnRequiredArgWithoutValueIsValid)
+TEST_F(Px, UnRequiredArgWithoutValueIsValid)
 {
     auto& arg = cmd.add_value_argument<int>("some integer")
 	.set_tag("-i");
@@ -145,7 +146,7 @@ TEST_F(Pax, UnRequiredArgWithoutValueIsValid)
     EXPECT_TRUE(arg.is_valid());    
 }
 
-TEST_F(Pax, CanValidateValueArgument)
+TEST_F(Px, CanValidateValueArgument)
 {
     auto validator = [](auto t) { return t > 3; };
     auto& arg = cmd.add_value_argument<int>("some integer")
@@ -161,7 +162,7 @@ TEST_F(Pax, CanValidateValueArgument)
     EXPECT_FALSE(arg.is_valid());
 }
 
-TEST_F(Pax, ValidatesDefaultValueWhenNoValueGiven)
+TEST_F(Px, ValidatesDefaultValueWhenNoValueGiven)
 {
     auto validator = [](auto t) { return t > 3; };
     constexpr auto default_value = 4;
@@ -179,7 +180,7 @@ TEST_F(Pax, ValidatesDefaultValueWhenNoValueGiven)
     EXPECT_FALSE(arg.is_valid());
 }
 
-TEST_F(Pax, CanParseAndValidatePath)
+TEST_F(Px, CanParseAndValidatePath)
 {
     auto& arg = cmd.add_value_argument<std::filesystem::path>("pth")
 	.set_tag("-p")

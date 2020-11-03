@@ -86,7 +86,8 @@ TEST_F(Pax, ThrowsOnSettingRequiredForArgWithDefault)
 	.set_long_tag("--float")
 	.set_default(default_float);
 
-    EXPECT_THROW(arg.set_required(true), std::logic_error);   }
+    EXPECT_THROW(arg.set_required(true), std::logic_error);   
+}
 
 int main(int argc, char** argv)
 {

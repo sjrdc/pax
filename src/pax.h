@@ -96,7 +96,7 @@ namespace pax
 
 	value_argument(const std::string_view& n);
 
-	const T& get_value() const;
+	const value_type& get_value() const;
 	value_argument<T>& bind(T*);
 	value_argument<T>& set_default(T d);
 

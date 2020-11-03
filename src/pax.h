@@ -14,7 +14,8 @@ namespace pax
 	virtual void print_help(std::ostream&) const = 0;
 	virtual void parse(std::span<const std::string>::iterator&, 
 			   const std::span<const std::string>::iterator&) = 0;
-    };
+	virtual bool is_valid() const = 0;
+    }; 
     
     template <typename T>
     class argument_base : public argument
@@ -97,14 +98,21 @@ namespace pax
 
 	const T& get_value() const;
 	value_argument<T>& bind(T*);
-	void set_default_value(T d);
+	value_argument<T>& set_default(T d);
+
+	bool is_required() const;
+	value_argument<T>& set_required(bool);
+
+	bool is_valid() const override;
 	void print_help(std::ostream&) const override;
 	void parse(std::span<const std::string>::iterator&, 
 		   const std::span<const std::string>::iterator&) override;
+	
     private:
 	std::optional<value_type> value{};
 	std::optional<value_type> default_value;
 	value_type* bound_variable = nullptr;
+	bool required = false;
     };
 
     template <typename T>
@@ -117,6 +125,23 @@ namespace pax
     value_argument<T>& value_argument<T>::bind(T* t)
     {
 	bound_variable = t;
+	return *this;
+    }
+
+    template <typename T>
+    bool value_argument<T>::is_required() const
+    {
+	return required;
+    }
+
+    template <typename T>
+    value_argument<T>& value_argument<T>::set_required(bool b)
+    {
+	if (default_value)
+	{
+	    throw std::logic_error("setting required on argument with default does not make sense");
+	}
+	required = b;
 	return *this;
     }
 
@@ -141,9 +166,14 @@ namespace pax
     }
 
     template <typename T>
-    void value_argument<T>::set_default_value(T d)
+    value_argument<T>& value_argument<T>::set_default(T d)
     {
+	if (is_required())
+	{
+	    throw std::logic_error("setting default on required argument does not make sense");
+	}
 	default_value = d;
+	return *this;
     }
 
     template <typename T>
@@ -153,10 +183,17 @@ namespace pax
     }
 
     template <typename T>
+    bool value_argument<T>::is_valid() const
+    {
+	return true;
+    }
+    
+    template <typename T>
     void value_argument<T>::parse(std::span<const std::string>::iterator& begin, 
 		   const std::span<const std::string>::iterator& end)
     {
-	if (std::distance(begin, end) > 1 && (*begin == base::get_tag() || *begin == base::get_long_tag()))
+	if (std::distance(begin, end) > 1 && 
+	    (*begin == base::get_tag() || *begin == base::get_long_tag()))
 	{
 	    ++begin;
 	    if constexpr (std::is_same_v<std::string, T>)
@@ -192,11 +229,17 @@ namespace pax
 	multi_value_argument(const std::string_view&);
 	void print_help(std::ostream&) const override;
 	value_type& get_value() const;
-	void set_default_value(std::span<T>);
+	multi_value_argument<T>& set_default(std::span<T>);
 	multi_value_argument<T>& bind(std::vector<T>*);
+
+	bool is_required() const;
+	T& set_required(bool);
+
+	bool is_valid() const override;
 	void parse(std::span<const std::string>::iterator&, 
 		   const std::span<const std::string>::iterator&) override;
     private:
+	bool required = false;
 	value_type& value;
 	std::optional<value_type> default_value;
 	value_type* bound_variable = nullptr;
@@ -209,15 +252,39 @@ namespace pax
     }
 
     template <typename T>
-    void multi_value_argument<T>::set_default_value(std::span<T> v)
+    multi_value_argument<T>& multi_value_argument<T>::set_default(std::span<T> v)
     {
+	if (base::is_required())
+	{
+	    throw std::logic_error("setting default on required argument does not make sense");
+	}
 	default_value->assign(std::begin(v), std::end(v));
+	return *this;
     }
 
     template <typename T>
     multi_value_argument<T>& multi_value_argument<T>::bind(std::vector<T>* v)
     {
 	bound_variable = v;
+    }
+
+    template <typename T>
+    bool multi_value_argument<T>::is_required() const
+    {
+	return required;
+    }
+
+    template <typename T>
+    T& multi_value_argument<T>::set_required(bool b)
+    {
+	required = b;
+	return *this;
+    }
+
+    template <typename T>
+    bool multi_value_argument<T>::is_valid() const
+    {
+	return true;
     }
 
     template <typename T>
@@ -234,6 +301,8 @@ namespace pax
 	flag_argument(const std::string_view&);
 	flag_argument& bind(bool*);
 	bool get_value() const;
+
+	bool is_valid() const override;
 	void print_help(std::ostream&) const override;
 	void parse(std::span<const std::string>::iterator&, 
 		   const std::span<const std::string>::iterator&) override;
@@ -256,6 +325,11 @@ namespace pax
     {
 	bound_flag = b;
 	return *this;
+    }
+
+    bool flag_argument::is_valid() const
+    {
+	return true;
     }
 
     void flag_argument::parse(std::span<const std::string>::iterator& begin, 

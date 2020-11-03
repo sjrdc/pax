@@ -89,6 +89,29 @@ TEST_F(Pax, ThrowsOnSettingRequiredForArgWithDefault)
     EXPECT_THROW(arg.set_required(true), std::logic_error);   
 }
 
+TEST_F(Pax, DefaultValueIsPropagatedToBoundVariable)
+{
+    constexpr auto default_int = 1; 
+    int q = 0;
+
+    auto& arg1 = cmd.add_value_argument<int>("some int")
+	.set_tag("-i")
+	.set_long_tag("--int")
+	.set_default(default_int)
+	.bind(&q);
+
+    EXPECT_EQ(q, default_int);
+
+    // reverse bind/default order and test again
+    auto& arg2 = cmd.add_value_argument<int>("some int")
+	.set_tag("-i")
+	.set_long_tag("--int")
+	.bind(&q)
+	.set_default(default_int + 1);
+
+    EXPECT_EQ(q, default_int + 1);
+}
+
 int main(int argc, char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

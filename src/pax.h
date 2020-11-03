@@ -125,6 +125,10 @@ namespace pax
     value_argument<T>& value_argument<T>::bind(T* t)
     {
 	bound_variable = t;
+	if (default_value)
+	{
+	    *bound_variable = *default_value;
+	}
 	return *this;
     }
 
@@ -173,6 +177,10 @@ namespace pax
 	    throw std::logic_error("setting default on required argument does not make sense");
 	}
 	default_value = d;
+	if (bound_variable != nullptr)
+	{
+	    *bound_variable = *default_value;
+	}
 	return *this;
     }
 

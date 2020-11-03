@@ -17,7 +17,7 @@ namespace pax
 	virtual bool is_valid() const = 0;
     }; 
     
-    template <typename T>
+    template <typename Derived>
     class argument_base : public argument
     {
     public:
@@ -26,18 +26,22 @@ namespace pax
 	{
 	}
 	const std::string& get_name() const;
-	T& set_name(const std::string_view&);
+	Derived& set_name(const std::string_view&);
 
 	const std::string& get_tag() const;
-	T& set_tag(const std::string_view&);
+	Derived& set_tag(const std::string_view&);
 
 	const std::string& get_long_tag() const;
-	T& set_long_tag(const std::string_view&);
+	Derived& set_long_tag(const std::string_view&);
+
+	const std::string& get_description() const;
+	Derived& set_description(const std::string_view&);
 
     private:
-	T& this_as_derived();
+	Derived& this_as_derived();
 	
 	std::string name;
+	std::string description;
 	std::string tag;
 	std::string long_tag;
     };
@@ -52,6 +56,20 @@ namespace pax
     T& argument_base<T>::set_name(const std::string_view& n)
     {
 	name = n;
+	return this_as_derived();
+    }
+
+    
+    template <typename T>
+    const std::string& argument_base<T>::get_description() const
+    {
+	return description;
+    }
+    
+    template <typename T>
+    T& argument_base<T>::set_description(const std::string_view& d)
+    {
+	description = d;
 	return this_as_derived();
     }
     

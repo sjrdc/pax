@@ -53,6 +53,12 @@ TEST_F(Pax, CanParseFloatingPointValueArg)
     EXPECT_FLOAT_EQ(f, arg.get_value());
 }
 
+TEST_F(Pax, FlagArgValueIsFalseByDefault)
+{
+    auto& arg = cmd.add_flag_argument("flag");
+    EXPECT_FALSE(arg.get_value());
+}
+
 TEST_F(Pax, CanParseFlagArg)
 {
     auto& arg = cmd.add_flag_argument("flag")
@@ -71,8 +77,6 @@ TEST_F(Pax, ThrowsOnSettingDefaultForRequiredArg)
 {
     constexpr auto default_float = 1.f; 
     auto& arg = cmd.add_value_argument<float>("some float")
-	.set_tag("-f")
-	.set_long_tag("--float")
 	.set_required(true);
 
     EXPECT_THROW(arg.set_default(default_float), std::logic_error);   
@@ -82,8 +86,6 @@ TEST_F(Pax, ThrowsOnSettingRequiredForArgWithDefault)
 {
     constexpr auto default_float = 1.f; 
     auto& arg = cmd.add_value_argument<float>("some float")
-	.set_tag("-f")
-	.set_long_tag("--float")
 	.set_default(default_float);
 
     EXPECT_THROW(arg.set_required(true), std::logic_error);   

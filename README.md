@@ -1,5 +1,11 @@
 # px
 px is a command line argument parser written in modern C++.
+## why?
+Don't we have enough command line argument parsers already? Probably, yes...
+This is meant to be an excercise in the use of some C++17 and C++20 features, as well as a way to provide a parser that
+- adheres to the DRY principle
+- facilitates the use of the filesystem library
+- by no means aims to provide many different ways to specify arguments; one simple syntax is sufficient
 
 ## example usage
 ```c++

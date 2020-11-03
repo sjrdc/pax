@@ -1,5 +1,5 @@
 #include "pax.h"
-
+#include <filesystem>
 #include <gtest/gtest.h>
 
 class Pax : public ::testing::Test
@@ -112,6 +112,85 @@ TEST_F(Pax, DefaultValueIsPropagatedToBoundVariable)
 	.set_default(default_int + 1);
 
     EXPECT_EQ(q, default_int + 1);
+}
+
+TEST_F(Pax, RequiredArgWithoutValueIsInvalid)
+{
+    auto& arg = cmd.add_value_argument<int>("some integer")
+	.set_tag("-i")
+	.set_required(true);
+
+    constexpr auto i = 5;
+    std::vector<std::string> args = {"piet"};
+    cmd.parse(args);
+    EXPECT_FALSE(arg.is_valid());
+
+    args = {"piet", "-i", std::to_string(i)};
+    cmd.parse(args);
+    EXPECT_TRUE(arg.is_valid());    
+}
+
+TEST_F(Pax, UnRequiredArgWithoutValueIsValid)
+{
+    auto& arg = cmd.add_value_argument<int>("some integer")
+	.set_tag("-i");
+    
+    constexpr auto i = 5;
+    std::vector<std::string> args = {"piet"};
+    cmd.parse(args);
+    EXPECT_TRUE(arg.is_valid());
+
+    args = {"piet", "-i", std::to_string(i)};
+    cmd.parse(args);
+    EXPECT_TRUE(arg.is_valid());    
+}
+
+TEST_F(Pax, CanValidateValueArgument)
+{
+    auto validator = [](auto t) { return t > 3; };
+    auto& arg = cmd.add_value_argument<int>("some integer")
+	.set_tag("-i")
+	.set_validator(validator);
+    
+    constexpr auto i = 5;
+    std::vector<std::string> args = {"piet", "-i", std::to_string(i)};
+    cmd.parse(args);
+    EXPECT_TRUE(arg.is_valid());
+
+    arg.set_validator([](auto t) { return t < 3; });
+    EXPECT_FALSE(arg.is_valid());
+}
+
+TEST_F(Pax, ValidatesDefaultValueWhenNoValueGiven)
+{
+    auto validator = [](auto t) { return t > 3; };
+    constexpr auto default_value = 4;
+    auto& arg = cmd.add_value_argument<int>("some integer")
+	.set_tag("-i")
+	.set_default(default_value)
+	.set_validator(validator);
+    
+    constexpr auto i = 5;
+    std::vector<std::string> args = {"piet", "-i", std::to_string(i)};
+    EXPECT_EQ(default_value, arg.get_value());
+    EXPECT_TRUE(arg.is_valid());
+
+    arg.set_validator([](auto t) { return t < 3; });
+    EXPECT_FALSE(arg.is_valid());
+}
+
+TEST_F(Pax, CanParseAndValidatePath)
+{
+    auto& arg = cmd.add_value_argument<std::filesystem::path>("pth")
+	.set_tag("-p")
+	.set_validator([](auto pth) { return std::filesystem::exists(pth); });
+    std::vector<std::string> args = {"piet", "-p", std::filesystem::current_path().string() };
+    cmd.parse(args);
+    EXPECT_TRUE(arg.is_valid());
+
+    args.back() += "_not_exist....";
+    cmd.parse(args);
+    EXPECT_FALSE(arg.is_valid());
 }
 
 int main(int argc, char** argv)

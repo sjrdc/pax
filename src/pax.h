@@ -1,3 +1,4 @@
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -125,12 +126,14 @@ namespace pax
 	void print_help(std::ostream&) const override;
 	void parse(std::span<const std::string>::iterator&, 
 		   const std::span<const std::string>::iterator&) override;
-	
+
+	value_argument<T>& set_validator(std::function<bool(T)>);
     private:
-	std::optional<value_type> value{};
+	std::optional<value_type> value;
 	std::optional<value_type> default_value;
 	value_type* bound_variable = nullptr;
 	bool required = false;
+	std::function<bool(T)> validation_function = [](T){ return true; };
     };
 
     template <typename T>
@@ -164,6 +167,13 @@ namespace pax
 	    throw std::logic_error("setting required on argument with default does not make sense");
 	}
 	required = b;
+	return *this;
+    }
+
+    template <typename T>
+    value_argument<T>& value_argument<T>::set_validator(std::function<bool(T)> f)
+    {
+	validation_function = std::move(f);
 	return *this;
     }
 
@@ -211,7 +221,15 @@ namespace pax
     template <typename T>
     bool value_argument<T>::is_valid() const
     {
-	return true;
+	if (value.has_value())
+	{
+	    return validation_function(*value);
+	}
+	else if (default_value.has_value())
+	{
+	    return validation_function(*default_value);
+	}
+	else return !required;
     }
     
     template <typename T>

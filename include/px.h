@@ -53,6 +53,8 @@ namespace px
 	const std::string& get_long_tag() const;
 	Derived& set_long_tag(std::string_view);
 
+	bool matches(std::string_view) const;
+
 	const std::string& get_description() const;
 	Derived& set_description(std::string_view);
 
@@ -65,6 +67,12 @@ namespace px
 	std::string long_tag;
     };
 
+    template <typename T>
+    bool argument_base<T>::matches(std::string_view s) const
+    {
+	return (!tag.empty() && tag == s) || (!long_tag.empty() && long_tag == s);
+    }
+    
     template <typename T>
     const std::string& argument_base<T>::get_name() const
     {
@@ -218,8 +226,7 @@ namespace px
     void value_argument<T>::parse(std::span<const std::string>::iterator& begin, 
 		   const std::span<const std::string>::iterator& end)
     {
-	if (std::distance(begin, end) > 1 && 
-	    (*begin == base::get_tag() || *begin == base::get_long_tag()))
+	if (std::distance(begin, end) > 1 && base::matches(*begin))
 	{
 	    ++begin;
 	    if constexpr (std::is_same_v<std::string, T>)
@@ -304,6 +311,7 @@ namespace px
     void multi_value_argument<T>::parse(std::span<const std::string>::iterator&, 
 					const std::span<const std::string>::iterator&)
     {
+	throw std::logic_error("not implemented yet");
     }
 
     class flag_argument : public argument_base<flag_argument>
@@ -348,8 +356,7 @@ namespace px
     void flag_argument::parse(std::span<const std::string>::iterator& begin, 
 			      const std::span<const std::string>::iterator& end)
     {
-	if (std::distance(begin, end) >= 1 && 
-	    (*begin == base::get_tag() || *begin == base::get_long_tag()))
+	if (std::distance(begin, end) >= 1 && base::matches(*begin))
 	{
 	    value = true;
 	}

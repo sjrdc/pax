@@ -34,7 +34,7 @@ int main(int argc, char** argv)
     .bind(&i);
   cli.add_value_argument<fs::path>("path", "-p")
     .set_required(true)
-    .set_description("the path to use for storage of the shown kittens")
+    .set_description("the path to use for storage of the shown kittens (must be an existing file)")
     .bind(&pth)
     .set_validator([](auto p) { return fs::exists(p) && fs::is_regular_file(p); });
   auto& help_arg = cli.add_flag_argument("help", "-h")

@@ -25,6 +25,14 @@
 #include <vector>
 #include <span>
 
+namespace detail
+{
+    std::string pad_right(std::string_view s, unsigned int n)
+    {
+	return std::string(s).append(std::max(0ul, n - s.size()), ' ');
+    }
+}
+
 namespace px
 {
     class argument
@@ -38,18 +46,16 @@ namespace px
     }; 
     
     template <typename derived>
-    class argument_base : public argument
+    class tag_argument : public argument
     {
     public:
-	argument_base(std::string_view n, std::string_view t) : 
+	tag_argument(std::string_view n, std::string_view t) : 
 	    name(n),
 	    tag(t)
 	{
 	}
 
 	const std::string& get_name() const;
-	derived& set_name(std::string_view);
-
 	const std::string& get_tag() const;
 
 	const std::string& get_alternate_tag() const;
@@ -57,6 +63,8 @@ namespace px
 
 	const std::string& get_description() const;
 	derived& set_description(std::string_view);
+
+	void print_help(std::ostream& o) const override;
     protected:
 	bool matches(std::string_view) const;
 
@@ -70,68 +78,73 @@ namespace px
     };
 
     template <typename T>
-    bool argument_base<T>::matches(std::string_view s) const
+    bool tag_argument<T>::matches(std::string_view s) const
     {
 	return (!tag.empty() && tag == s) || (!alternate_tag.empty() && alternate_tag == s);
     }
     
     template <typename T>
-    const std::string& argument_base<T>::get_name() const
+    const std::string& tag_argument<T>::get_name() const
     {
 	return name;
     }
     
     template <typename T>
-    T& argument_base<T>::set_name(std::string_view n)
+    void tag_argument<T>::print_help(std::ostream& o) const
     {
-	name = n;
-	return this_as_derived();
+	constexpr auto alternate_tag_size = 15;
+	o << "   "
+	  << tag
+	  << ((!alternate_tag.empty()) ? 
+	      ", " + detail::pad_right(alternate_tag, alternate_tag_size - 2) : 
+	      detail::pad_right("", alternate_tag_size))
+	  << description
+	  << "\n";
     }
-
     
     template <typename T>
-    const std::string& argument_base<T>::get_description() const
+    const std::string& tag_argument<T>::get_description() const
     {
 	return description;
     }
     
     template <typename T>
-    T& argument_base<T>::set_description(std::string_view d)
+    T& tag_argument<T>::set_description(std::string_view d)
     {
 	description = d;
 	return this_as_derived();
     }
     
     template <typename T>
-    const std::string& argument_base<T>::get_tag() const
+    const std::string& tag_argument<T>::get_tag() const
     {
 	return tag;
     }
     
     template <typename T>
-    const std::string& argument_base<T>::get_alternate_tag() const
+    const std::string& tag_argument<T>::get_alternate_tag() const
     {
 	return alternate_tag;
     }
     
     template <typename T>
-    T& argument_base<T>::set_alternate_tag(std::string_view t)
+    T& tag_argument<T>::set_alternate_tag(std::string_view t)
     {
 	alternate_tag = t;
 	return this_as_derived();
     }
 
     template <typename T>
-    T& argument_base<T>::this_as_derived()
+    T& tag_argument<T>::this_as_derived()
     {
 	return *reinterpret_cast<T*>(this);
     }
 
     template <typename T>
-    class value_argument : public argument_base<value_argument<T>>
+    class value_argument : public tag_argument<value_argument<T>>
     {
     public:
-	using base = argument_base<value_argument<T>>;
+	using base = tag_argument<value_argument<T>>;
 	using value_type = T;
 
 	value_argument(std::string_view n, std::string_view t);
@@ -206,7 +219,7 @@ namespace px
     template <typename T>
     void value_argument<T>::print_help(std::ostream& o) const
     {
-	o << base::get_name() << "\n";
+	base::print_help(o);
     }
 
     template <typename T>
@@ -256,10 +269,10 @@ namespace px
     }
     
     template <typename T>
-    class multi_value_argument : public argument_base<multi_value_argument<T>>
+    class multi_value_argument : public tag_argument<multi_value_argument<T>>
     {
     public:
-	using base = argument_base<multi_value_argument<T>>;
+	using base = tag_argument<multi_value_argument<T>>;
 	using value_type = std::vector<T>;
 	
 	multi_value_argument(std::string_view, std::string_view);
@@ -317,10 +330,10 @@ namespace px
 	throw std::logic_error("not implemented yet");
     }
 
-    class flag_argument : public argument_base<flag_argument>
+    class flag_argument : public tag_argument<flag_argument>
     {
     public:
-	using base = argument_base<flag_argument>;
+	using base = tag_argument<flag_argument>;
 	
 	flag_argument(std::string_view, std::string_view);
 	flag_argument& bind(bool*);
@@ -336,13 +349,13 @@ namespace px
     };
 
     flag_argument::flag_argument(std::string_view n, std::string_view t) :
-	argument_base<flag_argument>(n, t)
+	tag_argument<flag_argument>(n, t)
     {
     }
 
     void flag_argument::print_help(std::ostream& o) const
     {
-	o << get_name() << "\n";
+	base::print_help(o);
     }
 
     flag_argument& flag_argument::bind(bool* b)
@@ -397,7 +410,7 @@ namespace px
     template <typename T>
     void multi_value_argument<T>::print_help(std::ostream& o) const
     {
-	o << argument_base<multi_value_argument<T>>::get_name() <<"\n";
+	o << tag_argument<multi_value_argument<T>>::get_name() <<"\n";
     }
 
     command_line::command_line(std::string_view program_name) :
@@ -455,5 +468,6 @@ namespace px
 	{
 	    arg->print_help(o);
 	}
+	o << "\n";
     }
 }

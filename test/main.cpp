@@ -145,8 +145,53 @@ TEST_F(Px, CanParseAndValidatePath)
     EXPECT_FALSE(arg.is_valid());
 }
 
+#include <filesystem>
+
+namespace fs = std::filesystem;
+
+void show_kittens(int i)
+{
+}
+
+void store_kittens(const fs::path& p)
+{
+}
+
+int piet(int argc, char** argv)
+{
+  int i = 1;
+  fs::path pth;
+  
+  px::command_line cli("the program name");
+  cli.add_value_argument<int>("integer", "-i")
+    .set_description("the number of kittens to show")
+    .set_validator([](auto i) { return i > 0 && i <= 5; })
+    .bind(&i);
+  cli.add_value_argument<fs::path>("path", "-p")
+    .set_required(true)
+    .set_description("the path to use for storage of the shown kittens")
+    .bind(&pth)
+    .set_validator([](auto p) { return fs::exists(p) && fs::is_regular_file(p); });
+  auto& help_arg = cli.add_flag_argument("help", "-h")
+    .set_alternate_tag("--help")
+      .set_description("show this help message");
+  
+  cli.parse(argc, argv);
+  if (help_arg.get_value())
+  {
+    cli.print_help(std::cout);
+    return 0;
+  }
+  
+  show_kittens(i);
+  store_kittens(pth);
+  
+  return 0;
+}
+
 int main(int argc, char** argv)
 {
+    piet(argc, argv);
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

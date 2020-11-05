@@ -41,7 +41,7 @@ int main(int argc, char** argv)
     .set_validator([](auto p) { return fs::exists(p) && fs::is_regular_file(p); });
   auto& help_arg = cli.add_flag_argument("help")
     .set_tag("-h")
-    .set_long_tag("--help");
+    .set_alternate_tag("--help");
   
   cli.parse(argc, argv);
   if (help_arg.get_value())

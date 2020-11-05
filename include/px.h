@@ -50,8 +50,8 @@ namespace px
 	const std::string& get_tag() const;
 	Derived& set_tag(std::string_view);
 
-	const std::string& get_long_tag() const;
-	Derived& set_long_tag(std::string_view);
+	const std::string& get_alternate_tag() const;
+	Derived& set_alternate_tag(std::string_view);
 
 	bool matches(std::string_view) const;
 
@@ -64,13 +64,13 @@ namespace px
 	std::string name;
 	std::string description;
 	std::string tag;
-	std::string long_tag;
+	std::string alternate_tag;
     };
 
     template <typename T>
     bool argument_base<T>::matches(std::string_view s) const
     {
-	return (!tag.empty() && tag == s) || (!long_tag.empty() && long_tag == s);
+	return (!tag.empty() && tag == s) || (!alternate_tag.empty() && alternate_tag == s);
     }
     
     template <typename T>
@@ -114,15 +114,15 @@ namespace px
     }
     
     template <typename T>
-    const std::string& argument_base<T>::get_long_tag() const
+    const std::string& argument_base<T>::get_alternate_tag() const
     {
-	return long_tag;
+	return alternate_tag;
     }
     
     template <typename T>
-    T& argument_base<T>::set_long_tag(std::string_view t)
+    T& argument_base<T>::set_alternate_tag(std::string_view t)
     {
-	long_tag = t;
+	alternate_tag = t;
 	return this_as_derived();
     }
 

@@ -35,7 +35,7 @@ TEST_F(Px, CanParseIntegralValueArg)
 {
     auto& arg = cmd.add_value_argument<int>("some integer")
 	.set_tag("-i")
-	.set_long_tag("--integer");
+	.set_alternate_tag("--integer");
 
     constexpr auto i = 5;
     std::vector<std::string> args = {"piet", "-i", std::to_string(i)};
@@ -49,7 +49,7 @@ TEST_F(Px, CanStoreIntegralValueInBoundVariable)
     int q;
     auto& arg = cmd.add_value_argument<int>("some integer")
 	.set_tag("-i")
-	.set_long_tag("--integer")
+	.set_alternate_tag("--integer")
 	.bind(&q);
 
     constexpr auto i = 5;
@@ -63,7 +63,7 @@ TEST_F(Px, CanParseFloatingPointValueArg)
 {
     auto& arg = cmd.add_value_argument<float>("some float")
 	.set_tag("-f")
-	.set_long_tag("--float");
+	.set_alternate_tag("--float");
 
     constexpr auto f = 1.23f;
     std::vector<std::string> args = {"piet", "-f", std::to_string(f)};

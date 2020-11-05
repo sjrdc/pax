@@ -92,47 +92,6 @@ TEST_F(Px, CanParseFlagArg)
     EXPECT_TRUE(arg.get_value());	
 }
 
-TEST_F(Px, ThrowsOnSettingDefaultForRequiredArg)
-{
-    constexpr auto default_float = 1.f; 
-    auto& arg = cmd.add_value_argument<float>("some float")
-	.set_required(true);
-
-    EXPECT_THROW(arg.set_default(default_float), std::logic_error);   
-}
-
-TEST_F(Px, ThrowsOnSettingRequiredForArgWithDefault)
-{
-    constexpr auto default_float = 1.f; 
-    auto& arg = cmd.add_value_argument<float>("some float")
-	.set_default(default_float);
-
-    EXPECT_THROW(arg.set_required(true), std::logic_error);   
-}
-
-TEST_F(Px, DefaultValueIsPropagatedToBoundVariable)
-{
-    constexpr auto default_int = 1; 
-    int q = 0;
-
-    auto& arg1 = cmd.add_value_argument<int>("some int")
-	.set_tag("-i")
-	.set_long_tag("--int")
-	.set_default(default_int)
-	.bind(&q);
-
-    EXPECT_EQ(q, default_int);
-
-    // reverse bind/default order and test again
-    auto& arg2 = cmd.add_value_argument<int>("some int")
-	.set_tag("-i")
-	.set_long_tag("--int")
-	.bind(&q)
-	.set_default(default_int + 1);
-
-    EXPECT_EQ(q, default_int + 1);
-}
-
 TEST_F(Px, RequiredArgWithoutValueIsInvalid)
 {
     auto& arg = cmd.add_value_argument<int>("some integer")
@@ -174,24 +133,6 @@ TEST_F(Px, CanValidateValueArgument)
     constexpr auto i = 5;
     std::vector<std::string> args = {"piet", "-i", std::to_string(i)};
     cmd.parse(args);
-    EXPECT_TRUE(arg.is_valid());
-
-    arg.set_validator([](auto t) { return t < 3; });
-    EXPECT_FALSE(arg.is_valid());
-}
-
-TEST_F(Px, ValidatesDefaultValueWhenNoValueGiven)
-{
-    auto validator = [](auto t) { return t > 3; };
-    constexpr auto default_value = 4;
-    auto& arg = cmd.add_value_argument<int>("some integer")
-	.set_tag("-i")
-	.set_default(default_value)
-	.set_validator(validator);
-    
-    constexpr auto i = 5;
-    std::vector<std::string> args = {"piet", "-i", std::to_string(i)};
-    EXPECT_EQ(default_value, arg.get_value());
     EXPECT_TRUE(arg.is_valid());
 
     arg.set_validator([](auto t) { return t < 3; });

@@ -135,7 +135,6 @@ namespace px
 
 	const value_type& get_value() const;
 	value_argument<T>& bind(T*);
-	value_argument<T>& set_default(T d);
 
 	bool is_required() const;
 	value_argument<T>& set_required(bool);
@@ -148,7 +147,6 @@ namespace px
 	value_argument<T>& set_validator(std::function<bool(T)>);
     private:
 	std::optional<value_type> value;
-	std::optional<value_type> default_value;
 	value_type* bound_variable = nullptr;
 	bool required = false;
 	std::function<bool(T)> validation_function = [](T){ return true; };
@@ -164,10 +162,6 @@ namespace px
     value_argument<T>& value_argument<T>::bind(T* t)
     {
 	bound_variable = t;
-	if (default_value)
-	{
-	    *bound_variable = *default_value;
-	}
 	return *this;
     }
 
@@ -180,10 +174,6 @@ namespace px
     template <typename T>
     value_argument<T>& value_argument<T>::set_required(bool b)
     {
-	if (default_value)
-	{
-	    throw std::logic_error("setting required on argument with default does not make sense");
-	}
 	required = b;
 	return *this;
     }
@@ -204,30 +194,8 @@ namespace px
 	}
 	else
 	{
-	    if (default_value)
-	    {
-		return *default_value;
-	    }
-	    else
-	    {
-		throw std::runtime_error("argument '" + base::get_name() + "' does not have a value");
-	    }
+	    throw std::runtime_error("argument '" + base::get_name() + "' does not have a value");
 	}
-    }
-
-    template <typename T>
-    value_argument<T>& value_argument<T>::set_default(T d)
-    {
-	if (is_required())
-	{
-	    throw std::logic_error("setting default on required argument does not make sense");
-	}
-	default_value = d;
-	if (bound_variable != nullptr)
-	{
-	    *bound_variable = *default_value;
-	}
-	return *this;
     }
 
     template <typename T>
@@ -242,10 +210,6 @@ namespace px
 	if (value.has_value())
 	{
 	    return validation_function(*value);
-	}
-	else if (default_value.has_value())
-	{
-	    return validation_function(*default_value);
 	}
 	else return !required;
     }
@@ -291,7 +255,6 @@ namespace px
 	multi_value_argument(const std::string_view&);
 	void print_help(std::ostream&) const override;
 	value_type& get_value() const;
-	multi_value_argument<T>& set_default(std::span<T>);
 	multi_value_argument<T>& bind(std::vector<T>*);
 
 	bool is_required() const;
@@ -303,7 +266,6 @@ namespace px
     private:
 	bool required = false;
 	value_type& value;
-	std::optional<value_type> default_value;
 	value_type* bound_variable = nullptr;
     };
 
@@ -311,17 +273,6 @@ namespace px
     multi_value_argument<T>::multi_value_argument(const std::string_view& n) :
 	base(n)
     {
-    }
-
-    template <typename T>
-    multi_value_argument<T>& multi_value_argument<T>::set_default(std::span<T> v)
-    {
-	if (base::is_required())
-	{
-	    throw std::logic_error("setting default on required argument does not make sense");
-	}
-	default_value->assign(std::begin(v), std::end(v));
-	return *this;
     }
 
     template <typename T>

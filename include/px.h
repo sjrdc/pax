@@ -164,7 +164,7 @@ namespace px
 		  const std::span<const std::string>::iterator&) override;
 
     private:
-	std::optional<value_type> value;
+	std::optional<value_type> value = std::nullopt;
 	value_type* bound_variable = nullptr;
 	bool required = false;
 	std::function<bool(T)> validation_function = [](T){ return true; };
@@ -277,7 +277,7 @@ namespace px
 	
 	multi_value_argument(std::string_view, std::string_view);
 	void print_help(std::ostream&) const override;
-	value_type& get_value() const;
+	const value_type& get_value() const;
 	multi_value_argument<T>& bind(std::vector<T>*);
 
 	bool is_required() const;
@@ -288,7 +288,7 @@ namespace px
 		   const std::span<const std::string>::iterator&) override;
     private:
 	bool required = false;
-	value_type& value;
+	value_type value;
 	value_type* bound_variable = nullptr;
     };
 
@@ -302,6 +302,12 @@ namespace px
     multi_value_argument<T>& multi_value_argument<T>::bind(std::vector<T>* v)
     {
 	bound_variable = v;
+    }
+
+    template <typename T>
+    const std::vector<T>& multi_value_argument<T>::get_value() const
+    {
+	return value;
     }
 
     template <typename T>

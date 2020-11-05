@@ -145,6 +145,21 @@ TEST_F(Px, CanParseAndValidatePath)
     EXPECT_FALSE(arg.is_valid());
 }
 
+TEST_F(Px ,CanParseMultiArg)
+{
+    auto& arg = cmd.add_multi_value_argument<int>("multiple integers", "--ints");
+
+    const std::vector<int> v = {1, 2, 3, 4};
+    std::vector<std::string> args = {"piet", "--ints"};
+    for (const auto i : {1, 2, 3, 4})
+    {
+	args.push_back(std::to_string(i));
+    }
+
+    ASSERT_EQ(v.size(), arg.get_value().size());
+    EXPECT_TRUE(std::equal(std::begin(v), std::end(v), std::cbegin(arg.get_value())));
+}
+
 #include <filesystem>
 
 namespace fs = std::filesystem;

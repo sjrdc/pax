@@ -28,19 +28,16 @@ int main(int argc, char** argv)
   fs::path pth;
   
   px::command_line cli("the program name");
-  cli.add_value_argument<int>("integer")
-    .set_tag("-i")
+  cli.add_value_argument<int>("integer", "-i")
     .set_description("the number of kittens to show")
     .set_validator([](auto i) { return i > 0 && i <= 5; });
     .bind(&i);
-  cli.add_value_argument<fs::path>("path")
-    .set_tag("-p")
+  cli.add_value_argument<fs::path>("path", "-p")
     .set_required(true)
     .set_description("the path to use for storage of the shown kittens")
     .bind(&pth)
     .set_validator([](auto p) { return fs::exists(p) && fs::is_regular_file(p); });
-  auto& help_arg = cli.add_flag_argument("help")
-    .set_tag("-h")
+  auto& help_arg = cli.add_flag_argument("help", "-h")
     .set_alternate_tag("--help");
   
   cli.parse(argc, argv);

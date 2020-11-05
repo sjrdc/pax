@@ -33,8 +33,7 @@ protected:
 
 TEST_F(Px, CanParseIntegralValueArg)
 {
-    auto& arg = cmd.add_value_argument<int>("some integer")
-	.set_tag("-i")
+    auto& arg = cmd.add_value_argument<int>("some integer", "-i")
 	.set_alternate_tag("--integer");
 
     constexpr auto i = 5;
@@ -47,8 +46,7 @@ TEST_F(Px, CanParseIntegralValueArg)
 TEST_F(Px, CanStoreIntegralValueInBoundVariable)
 {
     int q;
-    auto& arg = cmd.add_value_argument<int>("some integer")
-	.set_tag("-i")
+    auto& arg = cmd.add_value_argument<int>("some integer", "-i")
 	.set_alternate_tag("--integer")
 	.bind(&q);
 
@@ -61,8 +59,7 @@ TEST_F(Px, CanStoreIntegralValueInBoundVariable)
 
 TEST_F(Px, CanParseFloatingPointValueArg)
 {
-    auto& arg = cmd.add_value_argument<float>("some float")
-	.set_tag("-f")
+    auto& arg = cmd.add_value_argument<float>("some float", "-f")
 	.set_alternate_tag("--float");
 
     constexpr auto f = 1.23f;
@@ -74,14 +71,13 @@ TEST_F(Px, CanParseFloatingPointValueArg)
 
 TEST_F(Px, FlagArgValueIsFalseByDefault)
 {
-    auto& arg = cmd.add_flag_argument("flag");
+    auto& arg = cmd.add_flag_argument("flag", "-f");
     EXPECT_FALSE(arg.get_value());
 }
 
 TEST_F(Px, CanParseFlagArg)
 {
-    auto& arg = cmd.add_flag_argument("flag")
-	.set_tag("-f");
+    auto& arg = cmd.add_flag_argument("flag", "-f");
     
     std::vector<std::string> args = {"piet"};
     cmd.parse(args);
@@ -94,8 +90,7 @@ TEST_F(Px, CanParseFlagArg)
 
 TEST_F(Px, RequiredArgWithoutValueIsInvalid)
 {
-    auto& arg = cmd.add_value_argument<int>("some integer")
-	.set_tag("-i")
+    auto& arg = cmd.add_value_argument<int>("some integer", "-i")
 	.set_required(true);
 
     constexpr auto i = 5;
@@ -110,8 +105,7 @@ TEST_F(Px, RequiredArgWithoutValueIsInvalid)
 
 TEST_F(Px, UnRequiredArgWithoutValueIsValid)
 {
-    auto& arg = cmd.add_value_argument<int>("some integer")
-	.set_tag("-i");
+    auto& arg = cmd.add_value_argument<int>("some integer", "-i");
     
     constexpr auto i = 5;
     std::vector<std::string> args = {"piet"};
@@ -126,8 +120,7 @@ TEST_F(Px, UnRequiredArgWithoutValueIsValid)
 TEST_F(Px, CanValidateValueArgument)
 {
     auto validator = [](auto t) { return t > 3; };
-    auto& arg = cmd.add_value_argument<int>("some integer")
-	.set_tag("-i")
+    auto& arg = cmd.add_value_argument<int>("some integer", "-i")
 	.set_validator(validator);
     
     constexpr auto i = 5;
@@ -141,8 +134,7 @@ TEST_F(Px, CanValidateValueArgument)
 
 TEST_F(Px, CanParseAndValidatePath)
 {
-    auto& arg = cmd.add_value_argument<std::filesystem::path>("pth")
-	.set_tag("-p")
+    auto& arg = cmd.add_value_argument<std::filesystem::path>("pth", "-p")
 	.set_validator([](auto pth) { return std::filesystem::exists(pth); });
     std::vector<std::string> args = {"piet", "-p", std::filesystem::current_path().string() };
     cmd.parse(args);

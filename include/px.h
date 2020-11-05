@@ -40,15 +40,15 @@ namespace px
     class argument_base : public argument
     {
     public:
-	argument_base(std::string_view n) : 
-	    name(n)
+	argument_base(std::string_view n, std::string_view t) : 
+	    name(n),
+	    tag(t)
 	{
 	}
 	const std::string& get_name() const;
 	derived& set_name(std::string_view);
 
 	const std::string& get_tag() const;
-	derived& set_tag(std::string_view);
 
 	const std::string& get_alternate_tag() const;
 	derived& set_alternate_tag(std::string_view);
@@ -107,13 +107,6 @@ namespace px
     }
     
     template <typename T>
-    T& argument_base<T>::set_tag(std::string_view t)
-    {
-	tag = t;
-	return this_as_derived();
-    }
-    
-    template <typename T>
     const std::string& argument_base<T>::get_alternate_tag() const
     {
 	return alternate_tag;
@@ -139,7 +132,7 @@ namespace px
 	using base = argument_base<value_argument<T>>;
 	using value_type = T;
 
-	value_argument(std::string_view n);
+	value_argument(std::string_view n, std::string_view t);
 
 	const value_type& get_value() const;
 	value_argument<T>& bind(T*);
@@ -161,8 +154,8 @@ namespace px
     };
 
     template <typename T>
-    value_argument<T>::value_argument(std::string_view n) :
-	base(n)
+    value_argument<T>::value_argument(std::string_view n, std::string_view t) :
+	base(n, t)
     {
     }
 
@@ -259,7 +252,7 @@ namespace px
 	using base = argument_base<multi_value_argument<T>>;
 	using value_type = std::vector<T>;
 	
-	multi_value_argument(std::string_view);
+	multi_value_argument(std::string_view, std::string_view);
 	void print_help(std::ostream&) const override;
 	value_type& get_value() const;
 	multi_value_argument<T>& bind(std::vector<T>*);
@@ -277,8 +270,8 @@ namespace px
     };
 
     template <typename T>
-    multi_value_argument<T>::multi_value_argument(std::string_view n) :
-	base(n)
+    multi_value_argument<T>::multi_value_argument(std::string_view n, std::string_view t) :
+	base(n, t)
     {
     }
 
@@ -319,7 +312,7 @@ namespace px
     public:
 	using base = argument_base<flag_argument>;
 	
-	flag_argument(std::string_view);
+	flag_argument(std::string_view, std::string_view);
 	flag_argument& bind(bool*);
 	bool get_value() const;
 
@@ -332,11 +325,11 @@ namespace px
 	bool* bound_flag = nullptr;
     };
 
-    flag_argument::flag_argument(std::string_view n) :
-	argument_base<flag_argument>(n)
+    flag_argument::flag_argument(std::string_view n, std::string_view t) :
+	argument_base<flag_argument>(n, t)
     {
     }
-    
+
     void flag_argument::print_help(std::ostream& o) const
     {
 	o << get_name() << "\n";
@@ -372,11 +365,11 @@ namespace px
     public:
 	command_line(std::string_view program_name);
 	
-	flag_argument& add_flag_argument(std::string_view name);
+	flag_argument& add_flag_argument(std::string_view, std::string_view);
 	template <typename T>
-	value_argument<T>& add_value_argument(std::string_view name);
+	value_argument<T>& add_value_argument(std::string_view, std::string_view);
 	template <typename T>
-	multi_value_argument<T>& add_multi_value_argument(std::string_view name);
+	multi_value_argument<T>& add_multi_value_argument(std::string_view name, std::string_view);
 
 	void print_help(std::ostream&);
 
@@ -400,25 +393,25 @@ namespace px
     {
     }
 
-    inline flag_argument& command_line::add_flag_argument(std::string_view name)
+    inline flag_argument& command_line::add_flag_argument(std::string_view name, std::string_view tag)
     {
-	auto arg = std::make_shared<flag_argument>(name);
+	auto arg = std::make_shared<flag_argument>(name, tag);
 	arguments.push_back(arg);
 	return *arg;
     }
 
     template <typename T>
-    value_argument<T>& command_line::add_value_argument(std::string_view name) 
+    value_argument<T>& command_line::add_value_argument(std::string_view name, std::string_view tag) 
     {
-	auto arg = std::make_shared<value_argument<T>>(name);
+	auto arg = std::make_shared<value_argument<T>>(name, tag);
 	arguments.push_back(arg);
 	return *arg;
     }
 
     template <typename T>
-    multi_value_argument<T>& command_line::add_multi_value_argument(std::string_view name) 
+    multi_value_argument<T>& command_line::add_multi_value_argument(std::string_view name, std::string_view tag) 
     {
-	auto arg = std::make_shared<multi_value_argument<T>>(name);
+	auto arg = std::make_shared<multi_value_argument<T>>(name, tag);
 	arguments.push_back(arg);
 	return *arg;
     }

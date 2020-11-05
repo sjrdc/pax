@@ -29,7 +29,7 @@ int main(int argc, char** argv)
   
   px::command_line cli("the program name");
   cli.add_value_argument<int>("integer", "-i")
-    .set_description("the number of kittens to show")
+    .set_description("the number of kittens to show; must be large than 0 and 5 at most")
     .set_validator([](auto i) { return i > 0 && i <= 5; })
     .bind(&i);
   cli.add_value_argument<fs::path>("path", "-p")

@@ -40,21 +40,21 @@ namespace px
     class argument_base : public argument
     {
     public:
-	argument_base(const std::string_view& n) : 
+	argument_base(std::string_view n) : 
 	    name(n)
 	{
 	}
 	const std::string& get_name() const;
-	Derived& set_name(const std::string_view&);
+	Derived& set_name(std::string_view);
 
 	const std::string& get_tag() const;
-	Derived& set_tag(const std::string_view&);
+	Derived& set_tag(std::string_view);
 
 	const std::string& get_long_tag() const;
-	Derived& set_long_tag(const std::string_view&);
+	Derived& set_long_tag(std::string_view);
 
 	const std::string& get_description() const;
-	Derived& set_description(const std::string_view&);
+	Derived& set_description(std::string_view);
 
     private:
 	Derived& this_as_derived();
@@ -72,7 +72,7 @@ namespace px
     }
     
     template <typename T>
-    T& argument_base<T>::set_name(const std::string_view& n)
+    T& argument_base<T>::set_name(std::string_view n)
     {
 	name = n;
 	return this_as_derived();
@@ -86,7 +86,7 @@ namespace px
     }
     
     template <typename T>
-    T& argument_base<T>::set_description(const std::string_view& d)
+    T& argument_base<T>::set_description(std::string_view d)
     {
 	description = d;
 	return this_as_derived();
@@ -99,7 +99,7 @@ namespace px
     }
     
     template <typename T>
-    T& argument_base<T>::set_tag(const std::string_view& t)
+    T& argument_base<T>::set_tag(std::string_view t)
     {
 	tag = t;
 	return this_as_derived();
@@ -112,7 +112,7 @@ namespace px
     }
     
     template <typename T>
-    T& argument_base<T>::set_long_tag(const std::string_view& t)
+    T& argument_base<T>::set_long_tag(std::string_view t)
     {
 	long_tag = t;
 	return this_as_derived();
@@ -131,7 +131,7 @@ namespace px
 	using base = argument_base<value_argument<T>>;
 	using value_type = T;
 
-	value_argument(const std::string_view& n);
+	value_argument(std::string_view n);
 
 	const value_type& get_value() const;
 	value_argument<T>& bind(T*);
@@ -153,7 +153,7 @@ namespace px
     };
 
     template <typename T>
-    value_argument<T>::value_argument(const std::string_view& n) :
+    value_argument<T>::value_argument(std::string_view n) :
 	base(n)
     {
     }
@@ -252,7 +252,7 @@ namespace px
 	using base = argument_base<multi_value_argument<T>>;
 	using value_type = std::vector<T>;
 	
-	multi_value_argument(const std::string_view&);
+	multi_value_argument(std::string_view);
 	void print_help(std::ostream&) const override;
 	value_type& get_value() const;
 	multi_value_argument<T>& bind(std::vector<T>*);
@@ -270,7 +270,7 @@ namespace px
     };
 
     template <typename T>
-    multi_value_argument<T>::multi_value_argument(const std::string_view& n) :
+    multi_value_argument<T>::multi_value_argument(std::string_view n) :
 	base(n)
     {
     }
@@ -311,7 +311,7 @@ namespace px
     public:
 	using base = argument_base<flag_argument>;
 	
-	flag_argument(const std::string_view&);
+	flag_argument(std::string_view);
 	flag_argument& bind(bool*);
 	bool get_value() const;
 
@@ -324,7 +324,7 @@ namespace px
 	bool* bound_flag = nullptr;
     };
 
-    flag_argument::flag_argument(const std::string_view& n) :
+    flag_argument::flag_argument(std::string_view n) :
 	argument_base<flag_argument>(n)
     {
     }
@@ -363,13 +363,13 @@ namespace px
     class command_line
     {
     public:
-	command_line(const std::string_view& program_name);
+	command_line(std::string_view program_name);
 	
-	flag_argument& add_flag_argument(const std::string_view& name);
+	flag_argument& add_flag_argument(std::string_view name);
 	template <typename T>
-	value_argument<T>& add_value_argument(const std::string_view& name);
+	value_argument<T>& add_value_argument(std::string_view name);
 	template <typename T>
-	multi_value_argument<T>& add_multi_value_argument(const std::string_view& name);
+	multi_value_argument<T>& add_multi_value_argument(std::string_view name);
 
 	void print_help(std::ostream&);
 
@@ -388,12 +388,12 @@ namespace px
 	o << argument_base<multi_value_argument<T>>::get_name() <<"\n";
     }
 
-    command_line::command_line(const std::string_view& program_name) :
+    command_line::command_line(std::string_view program_name) :
 	name(program_name)
     {
     }
 
-    inline flag_argument& command_line::add_flag_argument(const std::string_view& name)
+    inline flag_argument& command_line::add_flag_argument(std::string_view name)
     {
 	auto arg = std::make_shared<flag_argument>(name);
 	arguments.push_back(arg);
@@ -401,7 +401,7 @@ namespace px
     }
 
     template <typename T>
-    value_argument<T>& command_line::add_value_argument(const std::string_view& name) 
+    value_argument<T>& command_line::add_value_argument(std::string_view name) 
     {
 	auto arg = std::make_shared<value_argument<T>>(name);
 	arguments.push_back(arg);
@@ -409,7 +409,7 @@ namespace px
     }
 
     template <typename T>
-    multi_value_argument<T>& command_line::add_multi_value_argument(const std::string_view& name) 
+    multi_value_argument<T>& command_line::add_multi_value_argument(std::string_view name) 
     {
 	auto arg = std::make_shared<multi_value_argument<T>>(name);
 	arguments.push_back(arg);

@@ -31,8 +31,9 @@ namespace px
     {
     public:
 	virtual void print_help(std::ostream&) const = 0;
-	virtual void parse(std::span<const std::string>::iterator&, 
-			   const std::span<const std::string>::iterator&) = 0;
+	virtual std::span<const std::string>::iterator 
+	parse(const std::span<const std::string>::iterator&, 
+	      const std::span<const std::string>::iterator&) = 0;
 	virtual bool is_valid() const = 0;
     }; 
     
@@ -45,6 +46,7 @@ namespace px
 	    tag(t)
 	{
 	}
+
 	const std::string& get_name() const;
 	derived& set_name(std::string_view);
 
@@ -140,12 +142,14 @@ namespace px
 	bool is_required() const;
 	value_argument<T>& set_required(bool);
 
+	value_argument<T>& set_validator(std::function<bool(T)>);
+	
 	bool is_valid() const override;
 	void print_help(std::ostream&) const override;
-	void parse(std::span<const std::string>::iterator&, 
-		   const std::span<const std::string>::iterator&) override;
+	std::span<const std::string>::iterator 
+	    parse(const std::span<const std::string>::iterator&, 
+		  const std::span<const std::string>::iterator&) override;
 
-	value_argument<T>& set_validator(std::function<bool(T)>);
     private:
 	std::optional<value_type> value;
 	value_type* bound_variable = nullptr;
@@ -216,19 +220,20 @@ namespace px
     }
     
     template <typename T>
-    void value_argument<T>::parse(std::span<const std::string>::iterator& begin, 
+    std::span<const std::string>::iterator
+    value_argument<T>::parse(const std::span<const std::string>::iterator& begin, 
 		   const std::span<const std::string>::iterator& end)
     {
 	if (std::distance(begin, end) > 1 && base::matches(*begin))
 	{
-	    ++begin;
+	    auto i = std::next(begin);
 	    if constexpr (std::is_same_v<std::string, T>)
 	    {
-		value = *begin;
+		value = *i;
 	    }
 	    else
 	    {
-		std::istringstream stream(*begin);
+		std::istringstream stream(*i);
 		T t;
 		stream >> t;
 		if (!stream.eof() || stream.fail())
@@ -242,6 +247,11 @@ namespace px
 	    {
 		*bound_variable = *value;
 	    }
+	    return i;
+	}
+	else 
+	{
+	    return begin;
 	}
     }
     
@@ -260,8 +270,8 @@ namespace px
 	bool is_required() const;
 	T& set_required(bool);
 
-	bool is_valid() const override;
-	void parse(std::span<const std::string>::iterator&, 
+	bool is_valid() const override; 
+	std::span<const std::string>::iterator parse(const std::span<const std::string>::iterator&, 
 		   const std::span<const std::string>::iterator&) override;
     private:
 	bool required = false;
@@ -301,7 +311,7 @@ namespace px
     }
 
     template <typename T>
-    void multi_value_argument<T>::parse(std::span<const std::string>::iterator&, 
+    std::span<const std::string>::iterator multi_value_argument<T>::parse(const std::span<const std::string>::iterator&, 
 					const std::span<const std::string>::iterator&)
     {
 	throw std::logic_error("not implemented yet");
@@ -318,7 +328,7 @@ namespace px
 
 	bool is_valid() const override;
 	void print_help(std::ostream&) const override;
-	void parse(std::span<const std::string>::iterator&, 
+	std::span<const std::string>::iterator parse(const std::span<const std::string>::iterator&, 
 		   const std::span<const std::string>::iterator&) override;
     private:
 	bool value = false;
@@ -346,13 +356,15 @@ namespace px
 	return true;
     }
 
-    void flag_argument::parse(std::span<const std::string>::iterator& begin, 
-			      const std::span<const std::string>::iterator& end)
+    std::span<const std::string>::iterator 
+    flag_argument::parse(const std::span<const std::string>::iterator& begin, 
+			 const std::span<const std::string>::iterator& end)
     {
 	if (std::distance(begin, end) >= 1 && base::matches(*begin))
 	{
 	    value = true;
 	}
+	return begin;
     }
 
     bool flag_argument::get_value() const
@@ -423,7 +435,7 @@ namespace px
 	{
 	    for (auto& argument : arguments)
 	    {
-		argument->parse(argv, end);
+		argv = argument->parse(argv, end);
 	    }
 	}
     }

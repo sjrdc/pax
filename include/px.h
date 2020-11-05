@@ -36,7 +36,7 @@ namespace px
 	virtual bool is_valid() const = 0;
     }; 
     
-    template <typename Derived>
+    template <typename derived>
     class argument_base : public argument
     {
     public:
@@ -45,21 +45,21 @@ namespace px
 	{
 	}
 	const std::string& get_name() const;
-	Derived& set_name(std::string_view);
+	derived& set_name(std::string_view);
 
 	const std::string& get_tag() const;
-	Derived& set_tag(std::string_view);
+	derived& set_tag(std::string_view);
 
 	const std::string& get_alternate_tag() const;
-	Derived& set_alternate_tag(std::string_view);
-
-	bool matches(std::string_view) const;
+	derived& set_alternate_tag(std::string_view);
 
 	const std::string& get_description() const;
-	Derived& set_description(std::string_view);
+	derived& set_description(std::string_view);
+    protected:
+	bool matches(std::string_view) const;
 
     private:
-	Derived& this_as_derived();
+	derived& this_as_derived();
 	
 	std::string name;
 	std::string description;

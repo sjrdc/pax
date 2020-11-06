@@ -28,17 +28,17 @@ protected:
     {
     }
 
-    px::command_line cmd {"cmd"};    
+    px::command_line cli{ "cli" };
 };
 
 TEST_F(Px, CanParseIntegralValueArg)
 {
-    auto& arg = cmd.add_value_argument<int>("some integer", "-i")
-	.set_alternate_tag("--integer");
+    auto& arg = cli.add_value_argument<int>("some integer", "-i")
+        .set_alternate_tag("--integer");
 
     constexpr auto i = 5;
-    std::vector<std::string> args = {"piet", "-i", std::to_string(i)};
-    cmd.parse(args);
+    std::vector<std::string> args = { "piet", "-i", std::to_string(i) };
+    cli.parse(args);
 
     EXPECT_EQ(5, arg.get_value());
 }
@@ -46,86 +46,86 @@ TEST_F(Px, CanParseIntegralValueArg)
 TEST_F(Px, CanStoreIntegralValueInBoundVariable)
 {
     int q;
-    auto& arg = cmd.add_value_argument<int>("some integer", "-i")
-	.set_alternate_tag("--integer")
-	.bind(&q);
+    auto& arg = cli.add_value_argument<int>("some integer", "-i")
+        .set_alternate_tag("--integer")
+        .bind(&q);
 
     constexpr auto i = 5;
-    std::vector<std::string> args = {"piet", "-i", std::to_string(i)};
-    cmd.parse(args);
+    const std::vector<std::string> args = { "piet", "-i", std::to_string(i) };
+    cli.parse(args);
 
     EXPECT_EQ(q, i);
 }
 
 TEST_F(Px, CanParseFloatingPointValueArg)
 {
-    auto& arg = cmd.add_value_argument<float>("some float", "-f")
-	.set_alternate_tag("--float");
+    auto& arg = cli.add_value_argument<float>("some float", "-f")
+        .set_alternate_tag("--float");
 
     constexpr auto f = 1.23f;
-    std::vector<std::string> args = {"piet", "-f", std::to_string(f)};
-    cmd.parse(args);
+    const std::vector<std::string> args = { "piet", "-f", std::to_string(f) };
+    cli.parse(args);
 
     EXPECT_FLOAT_EQ(f, arg.get_value());
 }
 
 TEST_F(Px, FlagArgValueIsFalseByDefault)
 {
-    auto& arg = cmd.add_flag_argument("flag", "-f");
+    auto& arg = cli.add_flag_argument("flag", "-f");
     EXPECT_FALSE(arg.get_value());
 }
 
 TEST_F(Px, CanParseFlagArg)
 {
-    auto& arg = cmd.add_flag_argument("flag", "-f");
-    
-    std::vector<std::string> args = {"piet"};
-    cmd.parse(args);
+    auto& arg = cli.add_flag_argument("flag", "-f");
+
+    std::vector<std::string> args = { "piet" };
+    cli.parse(args);
     EXPECT_FALSE(arg.get_value());
 
-    args = {"piet", "-f"};
-    cmd.parse(args);
-    EXPECT_TRUE(arg.get_value());	
+    args = { "piet", "-f" };
+    cli.parse(args);
+    EXPECT_TRUE(arg.get_value());
 }
 
 TEST_F(Px, RequiredArgWithoutValueIsInvalid)
 {
-    auto& arg = cmd.add_value_argument<int>("some integer", "-i")
-	.set_required(true);
+    auto& arg = cli.add_value_argument<int>("some integer", "-i")
+        .set_required(true);
 
     constexpr auto i = 5;
-    std::vector<std::string> args = {"piet"};
-    cmd.parse(args);
+    std::vector<std::string> args = { "piet" };
+    cli.parse(args);
     EXPECT_FALSE(arg.is_valid());
 
-    args = {"piet", "-i", std::to_string(i)};
-    cmd.parse(args);
-    EXPECT_TRUE(arg.is_valid());    
+    args = { "piet", "-i", std::to_string(i) };
+    cli.parse(args);
+    EXPECT_TRUE(arg.is_valid());
 }
 
 TEST_F(Px, UnRequiredArgWithoutValueIsValid)
 {
-    auto& arg = cmd.add_value_argument<int>("some integer", "-i");
-    
+    auto& arg = cli.add_value_argument<int>("some integer", "-i");
+
     constexpr auto i = 5;
-    std::vector<std::string> args = {"piet"};
-    cmd.parse(args);
+    std::vector<std::string> args = { "piet" };
+    cli.parse(args);
     EXPECT_TRUE(arg.is_valid());
 
-    args = {"piet", "-i", std::to_string(i)};
-    cmd.parse(args);
-    EXPECT_TRUE(arg.is_valid());    
+    args = { "piet", "-i", std::to_string(i) };
+    cli.parse(args);
+    EXPECT_TRUE(arg.is_valid());
 }
 
 TEST_F(Px, CanValidateValueArgument)
 {
     auto validator = [](auto t) { return t > 3; };
-    auto& arg = cmd.add_value_argument<int>("some integer", "-i")
-	.set_validator(validator);
-    
+    auto& arg = cli.add_value_argument<int>("some integer", "-i")
+        .set_validator(validator);
+
     constexpr auto i = 5;
-    std::vector<std::string> args = {"piet", "-i", std::to_string(i)};
-    cmd.parse(args);
+    const std::vector<std::string> args = { "piet", "-i", std::to_string(i) };
+    cli.parse(args);
     EXPECT_TRUE(arg.is_valid());
 
     arg.set_validator([](auto t) { return t < 3; });
@@ -134,79 +134,36 @@ TEST_F(Px, CanValidateValueArgument)
 
 TEST_F(Px, CanParseAndValidatePath)
 {
-    auto& arg = cmd.add_value_argument<std::filesystem::path>("pth", "-p")
-	.set_validator([](auto pth) { return std::filesystem::exists(pth); });
-    std::vector<std::string> args = {"piet", "-p", std::filesystem::current_path().string() };
-    cmd.parse(args);
+    auto& arg = cli.add_value_argument<std::filesystem::path>("pth", "-p")
+        .set_validator([](auto pth) { return std::filesystem::exists(pth); });
+    std::vector<std::string> args = { "piet", "-p", std::filesystem::current_path().string() };
+    cli.parse(args);
     EXPECT_TRUE(arg.is_valid());
 
     args.back() += "_not_exist....";
-    cmd.parse(args);
+    cli.parse(args);
     EXPECT_FALSE(arg.is_valid());
 }
 
-TEST_F(Px ,CanParseMultiArg)
+TEST_F(Px, CanParseMultiArg)
 {
-    auto& arg = cmd.add_multi_value_argument<int>("multiple integers", "--ints");
+    auto& arg = cli.add_multi_value_argument<int>("multiple integers", "--ints");
 
-    const std::vector<int> v = {1, 2, 3, 4};
-    std::vector<std::string> args = {"piet", "--ints"};
-    for (const auto i : {1, 2, 3, 4})
+    const std::vector<int> v = { 1, 2, 3, 4 };
+    std::vector<std::string> args = { "piet", "--ints" };
+    for (const auto i : { 1, 2, 3, 4 })
     {
-	args.push_back(std::to_string(i));
+        args.push_back(std::to_string(i));
     }
+
+    cli.parse(args);
 
     ASSERT_EQ(v.size(), arg.get_value().size());
     EXPECT_TRUE(std::equal(std::begin(v), std::end(v), std::cbegin(arg.get_value())));
 }
 
-#include <filesystem>
-
-namespace fs = std::filesystem;
-
-void show_kittens(int i)
-{
-}
-
-void store_kittens(const fs::path& p)
-{
-}
-
-int piet(int argc, char** argv)
-{
-  int i = 1;
-  fs::path pth;
-  
-  px::command_line cli("the program name");
-  cli.add_value_argument<int>("integer", "-i")
-    .set_description("the number of kittens to show")
-    .set_validator([](auto i) { return i > 0 && i <= 5; })
-    .bind(&i);
-  cli.add_value_argument<fs::path>("path", "-p")
-    .set_required(true)
-    .set_description("the path to use for storage of the shown kittens")
-    .bind(&pth)
-    .set_validator([](auto p) { return fs::exists(p) && fs::is_regular_file(p); });
-  auto& help_arg = cli.add_flag_argument("help", "-h")
-    .set_alternate_tag("--help")
-      .set_description("show this help message");
-  
-  cli.parse(argc, argv);
-  if (help_arg.get_value())
-  {
-    cli.print_help(std::cout);
-    return 0;
-  }
-  
-  show_kittens(i);
-  store_kittens(pth);
-  
-  return 0;
-}
-
 int main(int argc, char** argv)
 {
-    piet(argc, argv);
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

@@ -358,21 +358,7 @@ namespace px
         {
             for (i = std::next(i); i != end && !detail::is_tag(*i); ++i)
             {
-                if constexpr (std::is_same_v<std::string, T>)
-                {
-                    value.push_back(*i);
-                }
-                else
-                {
-                    std::istringstream stream(*i);
-                    T t;
-                    stream >> t;
-                    if (!stream.eof() || stream.fail())
-                    {
-                        throw std::runtime_error("could not parse from '" + *begin + "'");
-                    }
-                    value.push_back(t);
-                }
+		value.push_back(detail::parse_scalar<T>(*i));
             }
 
             if (bound_variable != nullptr)

@@ -34,7 +34,7 @@ namespace detail
 {
     std::string pad_right(std::string_view s, unsigned int n)
     {
-        return std::string(s).append(std::max(0u, n - s.size()), ' ');
+        return std::string(s).append(std::max(0ul, n - s.size()), ' ');
     }
 
     template <typename T>
@@ -516,7 +516,7 @@ namespace px
 
     inline void command_line::parse(int argc, char** argv)
     {
-        parse({ argv, argv + argc });
+        parse(std::vector<std::string>(argv, argv + argc));
     }
 
     inline void command_line::print_help(std::ostream& o)

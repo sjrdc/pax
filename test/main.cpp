@@ -162,6 +162,23 @@ TEST_F(Px, CanParseMultiArg)
     EXPECT_TRUE(std::equal(std::begin(v), std::end(v), std::cbegin(arg.get_value())));
 }
 
+TEST_F(Px, RequiredMultiArgWithoutValueIsInvalid)
+{
+    auto& arg = cli.add_multi_value_argument<int>("multiple integers", "--ints")
+	.set_required(true);
+
+    EXPECT_FALSE(arg.is_valid());
+    
+    const std::vector<int> v = {1, 2, 3, 4};
+    std::vector<std::string> args = {"piet", "--ints"};
+    for (const auto i : {1, 2, 3, 4})
+    {
+	args.push_back(std::to_string(i));
+    }
+    cli.parse(args);
+    EXPECT_TRUE(arg.is_valid());
+}
+
 int main(int argc, char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

@@ -302,7 +302,7 @@ namespace px
         multi_value_argument<T>& bind(std::vector<T>*);
 
         bool is_required() const;
-        T& set_required(bool);
+        multi_value_argument<T>& set_required(bool);
 
         bool is_valid() const override;
         argv_iterator parse(const argv_iterator&,
@@ -338,7 +338,7 @@ namespace px
     }
 
     template <typename T>
-    T& multi_value_argument<T>::set_required(bool b)
+    multi_value_argument<T>& multi_value_argument<T>::set_required(bool b)
     {
         required = b;
         return *this;
@@ -347,7 +347,11 @@ namespace px
     template <typename T>
     bool multi_value_argument<T>::is_valid() const
     {
-        return true;
+        if (required)
+	{
+	    return !value.empty();
+	}
+	else return true;
     }
 
     template <typename T>

@@ -203,7 +203,7 @@ namespace px
         std::optional<value_type> value = std::nullopt;
         value_type* bound_variable = nullptr;
         bool required = false;
-        std::function<bool(T)> validation_function = [](T) { return true; };
+        std::function<bool(T)> validation_function = [](auto) { return true; };
     };
 
     template <typename T>
@@ -311,7 +311,7 @@ namespace px
         bool required = false;
         value_type value;
         value_type* bound_variable = nullptr;
-        std::function<bool(const std::vector<T>&)> validation_function = [](const std::vector<T>&) { return true; };	
+        std::function<bool(const std::vector<T>&)> validation_function = [](const auto&) { return true; };
     };
 
     template <typename T>

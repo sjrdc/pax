@@ -190,19 +190,17 @@ namespace px
         bool is_required() const;
         value_argument<T>& set_required(bool);
 
-        value_argument<T>& set_validator(std::function<bool(T)>);
+        value_argument<T>& set_validator(std::function<bool(const T&)>);
 
         bool is_valid() const override;
         void print_help(std::ostream&) const override;
-        argv_iterator
-            parse(const argv_iterator&,
-                const argv_iterator&) override;
+        argv_iterator parse(const argv_iterator&, const argv_iterator&) override;
 
     private:
         std::optional<value_type> value = std::nullopt;
         value_type* bound_variable = nullptr;
         bool required = false;
-        std::function<bool(T)> validation_function = [](auto) { return true; };
+        std::function<bool(const value_type&)> validator = [](const auto&) { return true; };
     };
 
     template <typename T>
@@ -232,9 +230,9 @@ namespace px
     }
 
     template <typename T>
-    value_argument<T>& value_argument<T>::set_validator(std::function<bool(T)> f)
+    value_argument<T>& value_argument<T>::set_validator(std::function<bool(const T&)> f)
     {
-        validation_function = std::move(f);
+        validator = std::move(f);
         return *this;
     }
 
@@ -262,7 +260,7 @@ namespace px
     {
         if (value.has_value())
         {
-            return validation_function(*value);
+            return validator(*value);
         }
         else return !required;
     }
@@ -304,13 +302,12 @@ namespace px
         multi_value_argument<T>& set_required(bool);
         multi_value_argument<T>& set_validator(std::function<bool(const std::vector<T>&)>);
         bool is_valid() const override;
-        argv_iterator parse(const argv_iterator&,
-            const argv_iterator&) override;
+        argv_iterator parse(const argv_iterator&, const argv_iterator&) override;
     private:
         bool required = false;
         value_type value;
         value_type* bound_variable = nullptr;
-        std::function<bool(const std::vector<T>&)> validation_function = [](const auto&) { return true; };
+        std::function<bool(const std::vector<T>&)> validator = [](const auto&) { return true; };
     };
 
     template <typename T>
@@ -347,7 +344,7 @@ namespace px
     template <typename T>
     multi_value_argument<T>& multi_value_argument<T>::set_validator(std::function<bool(const std::vector<T>&)> f)
     {
-	validation_function = f;
+	validator = f;
 	return *this;
     }
 
@@ -356,7 +353,7 @@ namespace px
     {
         if (required)
 	{
-	    return !value.empty() && validation_function(value);
+	    return !value.empty() && validator(value);
 	}
 	else return true;
     }
@@ -393,8 +390,7 @@ namespace px
 
         bool is_valid() const override;
         void print_help(std::ostream&) const override;
-        argv_iterator parse(const argv_iterator&,
-            const argv_iterator&) override;
+        argv_iterator parse(const argv_iterator&, const argv_iterator&) override;
     private:
         bool value = false;
         bool* bound_flag = nullptr;

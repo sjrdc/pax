@@ -303,7 +303,7 @@ namespace px
 
         bool is_required() const;
         multi_value_argument<T>& set_required(bool);
-
+        multi_value_argument<T>& set_validator(std::function<bool(const std::vector<T>&)>);
         bool is_valid() const override;
         argv_iterator parse(const argv_iterator&,
             const argv_iterator&) override;
@@ -311,6 +311,7 @@ namespace px
         bool required = false;
         value_type value;
         value_type* bound_variable = nullptr;
+        std::function<bool(const std::vector<T>&)> validation_function = [](const std::vector<T>&) { return true; };	
     };
 
     template <typename T>
@@ -345,11 +346,18 @@ namespace px
     }
 
     template <typename T>
+    multi_value_argument<T>& multi_value_argument<T>::set_validator(std::function<bool(const std::vector<T>&)> f)
+    {
+	validation_function = f;
+	return *this;
+    }
+
+    template <typename T>
     bool multi_value_argument<T>::is_valid() const
     {
         if (required)
 	{
-	    return !value.empty();
+	    return !value.empty() && validation_function(value);
 	}
 	else return true;
     }

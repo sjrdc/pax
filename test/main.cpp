@@ -165,15 +165,15 @@ TEST_F(Px, CanParseMultiArg)
 TEST_F(Px, RequiredMultiArgWithoutValueIsInvalid)
 {
     auto& arg = cli.add_multi_value_argument<int>("multiple integers", "--ints")
-	.set_required(true);
+        .set_required(true);
 
     EXPECT_FALSE(arg.is_valid());
-    
-    const std::vector<int> v = {1, 2, 3, 4};
-    std::vector<std::string> args = {"piet", "--ints"};
-    for (const auto i : {1, 2, 3, 4})
+
+    const std::vector<int> v = { 1, 2, 3, 4 };
+    std::vector<std::string> args = { "piet", "--ints" };
+    for (const auto i : { 1, 2, 3, 4 })
     {
-	args.push_back(std::to_string(i));
+        args.push_back(std::to_string(i));
     }
     cli.parse(args);
     EXPECT_TRUE(arg.is_valid());
@@ -181,25 +181,24 @@ TEST_F(Px, RequiredMultiArgWithoutValueIsInvalid)
 
 TEST_F(Px, CanValidateMultiArgWithCustomValidator)
 {
-
-    auto all_less_than_3 = [](const auto& v)
-	{ 
-	    return std::all_of(std::cbegin(v), std::cend(v), [](auto i) { return i < 3; }); 
-	};
-    auto all_less_than_5 = [](const auto& v) 
-	{ 
-	    return std::all_of(std::cbegin(v), std::cend(v), [](auto i) { return i < 5; }); 
-	};
+    const auto all_less_than_3 = [](const auto& v)
+    {
+        return std::all_of(std::cbegin(v), std::cend(v), [](auto i) { return i < 3; });
+    };
+    const auto all_less_than_5 = [](const auto& v)
+    {
+        return std::all_of(std::cbegin(v), std::cend(v), [](auto i) { return i < 5; });
+    };
 
     auto& arg = cli.add_multi_value_argument<int>("multiple integers", "--ints")
-	.set_required(true)
-	.set_validator(all_less_than_3);
+        .set_required(true)
+        .set_validator(all_less_than_3);
 
-    const std::vector<int> v = {1, 2, 3, 4};
-    std::vector<std::string> args = {"piet", "--ints"};
-    for (const auto i : {1, 2, 3, 4})
+    const std::vector<int> v = { 1, 2, 3, 4 };
+    std::vector<std::string> args = { "piet", "--ints" };
+    for (const auto i : { 1, 2, 3, 4 })
     {
-	args.push_back(std::to_string(i));
+        args.push_back(std::to_string(i));
     }
     cli.parse(args);
     EXPECT_FALSE(arg.is_valid());

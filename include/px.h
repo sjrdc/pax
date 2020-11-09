@@ -348,18 +348,18 @@ namespace px
     template <typename T>
     multi_value_argument<T>& multi_value_argument<T>::set_validator(std::function<bool(const std::vector<T>&)> f)
     {
-	validator = f;
-	return *this;
+        validator = f;
+        return *this;
     }
 
     template <typename T>
     bool multi_value_argument<T>::is_valid() const
     {
         if (required)
-	{
-	    return !value.empty() && validator(value);
-	}
-	else return true;
+        {
+            return !value.empty() && validator(value);
+        }
+        else return true;
     }
 
     template <typename T>
@@ -370,7 +370,7 @@ namespace px
         {
             for (i = std::next(i); i != end && !detail::is_tag(*i); ++i)
             {
-		value.push_back(detail::parse_scalar<T>(*i));
+                value.push_back(detail::parse_scalar<T>(*i));
             }
 
             if (bound_variable != nullptr)

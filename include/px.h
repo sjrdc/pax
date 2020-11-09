@@ -243,14 +243,11 @@ namespace px
     template <typename T>
     const typename value_argument<T>::value_type& value_argument<T>::get_value() const
     {
-        if (value)
+        if (!is_valid())
         {
-            return *value;
+            throw std::runtime_error("getting value from invalid argument '" + base::get_name() + "'");
         }
-        else
-        {
-            throw std::runtime_error("argument '" + base::get_name() + "' does not have a value");
-        }
+        return *value;
     }
 
     template <typename T>
@@ -329,6 +326,11 @@ namespace px
     template <typename T>
     const std::vector<T>& multi_value_argument<T>::get_value() const
     {
+        if (!is_valid())
+        {
+            throw std::runtime_error("getting value from invalid argument '" + base::get_name() + "'");
+        }
+        
         return value;
     }
 

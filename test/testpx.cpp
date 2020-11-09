@@ -92,8 +92,8 @@ TEST_F(PxValueArgTest, CanParseFloatingPointValueArg)
 TEST_F(PxValueArgTest, ThrowsOnGettingValueFromValuelessArg)
 {
     auto& arg = cli.add_value_argument<float>("some float", "-f")
-        .set_alternate_tag("--float");
-
+        .set_required("--float");
+    // required and no value -> invalid
     EXPECT_THROW(arg.get_value(), std::runtime_error);
 }
 
@@ -255,4 +255,12 @@ TEST_F(PxMultiValueArgTest, CanValidateMultiArgWithCustomValidator)
 
     arg.set_validator(all_less_than_5);
     EXPECT_TRUE(arg.is_valid());
+}
+
+TEST_F(PxMultiValueArgTest, ThrowsOnGettingValueFromInvalidMultiArg)
+{
+    auto& arg = cli.add_multi_value_argument<int>("multiple integers", "--ints")
+        .set_required(true);
+    // required + does not have a value -> invalid
+    EXPECT_THROW(arg.get_value(), std::runtime_error);
 }

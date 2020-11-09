@@ -244,6 +244,18 @@ TEST_F(PxMultiValueArgTest, RequiredMultiArgWithoutValueIsInvalid)
     EXPECT_TRUE(arg.is_valid());
 }
 
+
+TEST_F(PxMultiValueArgTest, CanStoreIntegralValueInBoundVariable)
+{
+    std::vector<int> q;
+    auto& arg = cli.add_multi_value_argument<int>("some integer", "--ints")
+        .bind(&q);
+
+    cli.parse(make_multi_arg());
+
+    EXPECT_EQ(q, v);
+}
+
 TEST_F(PxMultiValueArgTest, CanValidateMultiArgWithCustomValidator)
 {
     auto& arg = cli.add_multi_value_argument<int>("multiple integers", "--ints")

@@ -321,6 +321,7 @@ namespace px
     multi_value_argument<T>& multi_value_argument<T>::bind(std::vector<T>* v)
     {
         bound_variable = v;
+        return *this;
     }
 
     template <typename T>

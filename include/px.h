@@ -18,6 +18,10 @@
 
 #include <algorithm>
 #include <cctype>
+#if __has_include(<format>)
+#include <format>
+#define PX_HAS_FORMAT
+#endif
 #include <functional>
 #include <memory>
 #include <optional>

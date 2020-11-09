@@ -21,6 +21,18 @@
 #include <gtest/gtest.h>
 #include <filesystem>
 
+namespace
+{
+    const auto all_less_than_3 = [](const auto& v)
+    {
+        return std::all_of(std::cbegin(v), std::cend(v), [](auto i) { return i < 3; });
+    };
+    const auto all_less_than_5 = [](const auto& v)
+    {
+        return std::all_of(std::cbegin(v), std::cend(v), [](auto i) { return i < 5; });
+    };
+}
+
 class Px : public ::testing::Test
 {
 protected:
@@ -181,15 +193,6 @@ TEST_F(Px, RequiredMultiArgWithoutValueIsInvalid)
 
 TEST_F(Px, CanValidateMultiArgWithCustomValidator)
 {
-    const auto all_less_than_3 = [](const auto& v)
-    {
-        return std::all_of(std::cbegin(v), std::cend(v), [](auto i) { return i < 3; });
-    };
-    const auto all_less_than_5 = [](const auto& v)
-    {
-        return std::all_of(std::cbegin(v), std::cend(v), [](auto i) { return i < 5; });
-    };
-
     auto& arg = cli.add_multi_value_argument<int>("multiple integers", "--ints")
         .set_required(true)
         .set_validator(all_less_than_3);

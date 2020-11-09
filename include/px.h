@@ -31,9 +31,9 @@
 
 namespace detail
 {
-    std::string pad_right(std::string_view s, unsigned int n)
+    std::string pad_right(std::string_view s, size_t n)
     {
-        return std::string(s).append(std::max(0ul, n - s.size()), ' ');
+        return std::string(s).append(std::max(0u, n - s.size()), ' ');
     }
 
     template <typename T>

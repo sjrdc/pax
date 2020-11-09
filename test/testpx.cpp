@@ -33,7 +33,7 @@ namespace
     };
 }
 
-class Px : public ::testing::Test
+class PxTest : public ::testing::Test
 {
 protected:
     void SetUp() override
@@ -43,7 +43,15 @@ protected:
     px::command_line cli{ "cli" };
 };
 
-TEST_F(Px, CanParseIntegralValueArg)
+class PxValueArgTest : public PxTest
+{
+protected:
+    void SetUp() override
+    {
+    }    
+};
+
+TEST_F(PxValueArgTest, CanParseIntegralValueArg)
 {
     auto& arg = cli.add_value_argument<int>("some integer", "-i")
         .set_alternate_tag("--integer");
@@ -52,10 +60,10 @@ TEST_F(Px, CanParseIntegralValueArg)
     std::vector<std::string> args = { "piet", "-i", std::to_string(i) };
     cli.parse(args);
 
-    EXPECT_EQ(5, arg.get_value());
+    EXPECT_EQ(i, arg.get_value());
 }
 
-TEST_F(Px, CanStoreIntegralValueInBoundVariable)
+TEST_F(PxValueArgTest, CanStoreIntegralValueInBoundVariable)
 {
     int q;
     auto& arg = cli.add_value_argument<int>("some integer", "-i")
@@ -69,7 +77,7 @@ TEST_F(Px, CanStoreIntegralValueInBoundVariable)
     EXPECT_EQ(q, i);
 }
 
-TEST_F(Px, CanParseFloatingPointValueArg)
+TEST_F(PxValueArgTest, CanParseFloatingPointValueArg)
 {
     auto& arg = cli.add_value_argument<float>("some float", "-f")
         .set_alternate_tag("--float");
@@ -81,26 +89,27 @@ TEST_F(Px, CanParseFloatingPointValueArg)
     EXPECT_FLOAT_EQ(f, arg.get_value());
 }
 
-TEST_F(Px, FlagArgValueIsFalseByDefault)
+TEST_F(PxValueArgTest, ThrowsOnGettingValueFromValuelessArg)
 {
-    auto& arg = cli.add_flag_argument("flag", "-f");
-    EXPECT_FALSE(arg.get_value());
+    auto& arg = cli.add_value_argument<float>("some float", "-f")
+        .set_alternate_tag("--float");
+
+    EXPECT_THROW(arg.get_value(), std::runtime_error);
 }
 
-TEST_F(Px, CanParseFlagArg)
+TEST_F(PxValueArgTest, CanParseStringValueArg)
 {
-    auto& arg = cli.add_flag_argument("flag", "-f");
+    auto& arg = cli.add_value_argument<std::string>("some string", "-s")
+        .set_alternate_tag("--string");
 
-    std::vector<std::string> args = { "piet" };
+    const std::string s("jannssen");
+    const std::vector<std::string> args = { "piet", "-s", s };
     cli.parse(args);
-    EXPECT_FALSE(arg.get_value());
 
-    args = { "piet", "-f" };
-    cli.parse(args);
-    EXPECT_TRUE(arg.get_value());
+    EXPECT_EQ(s, arg.get_value());
 }
 
-TEST_F(Px, RequiredArgWithoutValueIsInvalid)
+TEST_F(PxValueArgTest, RequiredArgWithoutValueIsInvalid)
 {
     auto& arg = cli.add_value_argument<int>("some integer", "-i")
         .set_required(true);
@@ -115,7 +124,7 @@ TEST_F(Px, RequiredArgWithoutValueIsInvalid)
     EXPECT_TRUE(arg.is_valid());
 }
 
-TEST_F(Px, UnRequiredArgWithoutValueIsValid)
+TEST_F(PxValueArgTest, UnRequiredArgWithoutValueIsValid)
 {
     auto& arg = cli.add_value_argument<int>("some integer", "-i");
 
@@ -129,7 +138,7 @@ TEST_F(Px, UnRequiredArgWithoutValueIsValid)
     EXPECT_TRUE(arg.is_valid());
 }
 
-TEST_F(Px, CanValidateValueArgument)
+TEST_F(PxValueArgTest, CanValidateValueArgument)
 {
     auto validator = [](auto t) { return t > 3; };
     auto& arg = cli.add_value_argument<int>("some integer", "-i")
@@ -144,7 +153,7 @@ TEST_F(Px, CanValidateValueArgument)
     EXPECT_FALSE(arg.is_valid());
 }
 
-TEST_F(Px, CanParseAndValidatePath)
+TEST_F(PxValueArgTest, CanParseAndValidatePath)
 {
     auto& arg = cli.add_value_argument<std::filesystem::path>("pth", "-p")
         .set_validator([](auto pth) { return std::filesystem::exists(pth); });
@@ -157,53 +166,91 @@ TEST_F(Px, CanParseAndValidatePath)
     EXPECT_FALSE(arg.is_valid());
 }
 
-TEST_F(Px, CanParseMultiArg)
+
+class PxFlagArgTest : public PxTest
+{
+protected:
+    void SetUp() override
+    {
+    }
+};
+
+TEST_F(PxFlagArgTest, FlagArgValueIsFalseByDefault)
+{
+    auto& arg = cli.add_flag_argument("flag", "-f");
+    EXPECT_FALSE(arg.get_value());
+}
+
+TEST_F(PxFlagArgTest, CanParseFlagArg)
+{
+    auto& arg = cli.add_flag_argument("flag", "-f");
+
+    std::vector<std::string> args = { "piet" };
+    cli.parse(args);
+    EXPECT_FALSE(arg.get_value());
+
+    args = { "piet", "-f" };
+    cli.parse(args);
+    EXPECT_TRUE(arg.get_value());
+}
+
+
+class PxMultiValueArgTest : public PxValueArgTest
+{
+protected:
+    void SetUp() override
+    {
+
+    }
+
+    auto make_multi_arg() const
+    {
+        std::vector<std::string> args = { "piet", "--ints" };
+        for (const auto& i : v)
+        {
+            args.push_back(std::to_string(i));
+        }
+        return args;
+    }
+    const std::vector<int> v = { 1, 2, 3, 4 };
+};
+
+TEST_F(PxMultiValueArgTest, CanParseMultiIntegralArg)
 {
     auto& arg = cli.add_multi_value_argument<int>("multiple integers", "--ints");
 
-    const std::vector<int> v = { 1, 2, 3, 4 };
-    std::vector<std::string> args = { "piet", "--ints" };
-    for (const auto i : { 1, 2, 3, 4 })
-    {
-        args.push_back(std::to_string(i));
-    }
-
-    cli.parse(args);
+    cli.parse(make_multi_arg());
 
     ASSERT_EQ(v.size(), arg.get_value().size());
     EXPECT_TRUE(std::equal(std::begin(v), std::end(v), std::cbegin(arg.get_value())));
 }
 
-TEST_F(Px, RequiredMultiArgWithoutValueIsInvalid)
+TEST_F(PxMultiValueArgTest, CanParseMultiStringArg)
+{
+    auto& arg = cli.add_multi_value_argument<std::string>("multiple strings", "--strings");
+
+    cli.parse({ "piet", "--strings", "s0", "s1", "s2", "s3" });
+    EXPECT_EQ(4, arg.get_value().size());
+}
+
+TEST_F(PxMultiValueArgTest, RequiredMultiArgWithoutValueIsInvalid)
 {
     auto& arg = cli.add_multi_value_argument<int>("multiple integers", "--ints")
         .set_required(true);
 
     EXPECT_FALSE(arg.is_valid());
 
-    const std::vector<int> v = { 1, 2, 3, 4 };
-    std::vector<std::string> args = { "piet", "--ints" };
-    for (const auto i : { 1, 2, 3, 4 })
-    {
-        args.push_back(std::to_string(i));
-    }
-    cli.parse(args);
+    cli.parse(make_multi_arg());
     EXPECT_TRUE(arg.is_valid());
 }
 
-TEST_F(Px, CanValidateMultiArgWithCustomValidator)
+TEST_F(PxMultiValueArgTest, CanValidateMultiArgWithCustomValidator)
 {
     auto& arg = cli.add_multi_value_argument<int>("multiple integers", "--ints")
         .set_required(true)
         .set_validator(all_less_than_3);
 
-    const std::vector<int> v = { 1, 2, 3, 4 };
-    std::vector<std::string> args = { "piet", "--ints" };
-    for (const auto i : { 1, 2, 3, 4 })
-    {
-        args.push_back(std::to_string(i));
-    }
-    cli.parse(args);
+    cli.parse(make_multi_arg());
     EXPECT_FALSE(arg.is_valid());
 
     arg.set_validator(all_less_than_5);

@@ -209,9 +209,3 @@ TEST_F(Px, CanValidateMultiArgWithCustomValidator)
     arg.set_validator(all_less_than_5);
     EXPECT_TRUE(arg.is_valid());
 }
-
-int main(int argc, char** argv)
-{
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

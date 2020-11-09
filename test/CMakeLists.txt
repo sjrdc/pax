@@ -1,7 +1,7 @@
 enable_testing()
 find_package(GTest REQUIRED)
 
-add_executable(testpax main.cpp)
-target_link_libraries(testpax GTest::GTest GTest::Main)
+add_executable(testpx testpx.cpp testmain.cpp)
+target_link_libraries(testpx GTest::GTest GTest::Main)
 
-add_test(AllTestsInFoo testpax)
+add_test(AllTestsInFoo testpx)

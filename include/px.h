@@ -410,7 +410,7 @@ namespace px
         argv_iterator parse(const argv_iterator&, const argv_iterator&) override;
     private:
         bool value = false;
-        bool* bound_flag = nullptr;
+        bool* bound_variable = nullptr;
     };
 
     flag_argument::flag_argument(std::string_view n, std::string_view t) :
@@ -425,7 +425,8 @@ namespace px
 
     flag_argument& flag_argument::bind(bool* b)
     {
-        bound_flag = b;
+        bound_variable = b;
+        *bound_variable = value;
         return *this;
     }
 
@@ -441,7 +442,12 @@ namespace px
         if (std::distance(begin, end) >= 1 && base::matches(*begin))
         {
             value = true;
+            if (bound_variable != nullptr)
+            {
+                *bound_variable = value;
+            }
         }
+
         return begin;
     }
 

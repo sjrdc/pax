@@ -193,6 +193,21 @@ TEST_F(PxFlagArgTest, CanParseFlagArg)
     EXPECT_TRUE(flag_arg->get().get_value());
 }
 
+TEST_F(PxFlagArgTest, CanStoreValueInBoundVariable)
+{
+    bool q = false;
+    std::vector<std::string> args = { "piet" };
+    flag_arg->get().bind(&q);
+    cli.parse(args);
+    EXPECT_FALSE(flag_arg->get().get_value());
+    EXPECT_FALSE(q);
+
+    args = { "piet", "-f" };
+    cli.parse(args);
+    EXPECT_TRUE(flag_arg->get().get_value());
+    EXPECT_TRUE(q);
+}
+
 class PxMultiValueArgTest : public PxValueArgTest
 {
 protected:

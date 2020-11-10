@@ -238,10 +238,17 @@ TEST_F(PxMultiValueArgTest, RequiredMultiArgWithoutValueIsInvalid)
 
     EXPECT_FALSE(arg.is_valid());
 
-    cli.parse(make_multi_arg());
+    EXPECT_NO_THROW(cli.parse(make_multi_arg()));
     EXPECT_TRUE(arg.is_valid());
 }
 
+TEST_F(PxMultiValueArgTest, ThrowsOnGettingValueFromInvalidMultiArg)
+{
+    auto& arg = cli.add_multi_value_argument<int>("multiple integers", "--ints")
+        .set_required(true);
+    // required + does not have a value -> invalid
+    EXPECT_THROW(arg.get_value(), std::runtime_error);
+}
 
 TEST_F(PxMultiValueArgTest, CanStoreIntegralValueInBoundVariable)
 {
@@ -265,12 +272,4 @@ TEST_F(PxMultiValueArgTest, CanValidateMultiArgWithCustomValidator)
 
     arg.set_validator(all_less_than_5);
     EXPECT_TRUE(arg.is_valid());
-}
-
-TEST_F(PxMultiValueArgTest, ThrowsOnGettingValueFromInvalidMultiArg)
-{
-    auto& arg = cli.add_multi_value_argument<int>("multiple integers", "--ints")
-        .set_required(true);
-    // required + does not have a value -> invalid
-    EXPECT_THROW(arg.get_value(), std::runtime_error);
 }

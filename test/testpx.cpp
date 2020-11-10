@@ -171,28 +171,27 @@ class PxFlagArgTest : public PxTest
 protected:
     void SetUp() override
     {
+        flag_arg = std::ref(cli.add_flag_argument("flag", "-f"));
     }
+
+    std::optional<std::reference_wrapper<px::flag_argument>> flag_arg;
 };
 
 TEST_F(PxFlagArgTest, FlagArgValueIsFalseByDefault)
 {
-    auto& arg = cli.add_flag_argument("flag", "-f");
-    EXPECT_FALSE(arg.get_value());
+    EXPECT_FALSE(flag_arg->get().get_value());
 }
 
 TEST_F(PxFlagArgTest, CanParseFlagArg)
 {
-    auto& arg = cli.add_flag_argument("flag", "-f");
-
     std::vector<std::string> args = { "piet" };
     cli.parse(args);
-    EXPECT_FALSE(arg.get_value());
+    EXPECT_FALSE(flag_arg->get().get_value());
 
     args = { "piet", "-f" };
     cli.parse(args);
-    EXPECT_TRUE(arg.get_value());
+    EXPECT_TRUE(flag_arg->get().get_value());
 }
-
 
 class PxMultiValueArgTest : public PxValueArgTest
 {

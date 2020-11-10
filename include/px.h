@@ -81,6 +81,7 @@ namespace px
         virtual void print_help(std::ostream&) const = 0;
         virtual argv_iterator parse(const argv_iterator&, const argv_iterator&) = 0;
         virtual bool is_valid() const = 0;
+        virtual const std::string& get_name() const = 0;
     };
 
     template <typename derived>
@@ -93,7 +94,7 @@ namespace px
         {
         }
 
-        const std::string& get_name() const;
+        const std::string& get_name() const override;
         const std::string& get_tag() const;
 
         const std::string& get_alternate_tag() const;
@@ -469,6 +470,8 @@ namespace px
         void parse(int argc, char** argv);
 
     private:
+        std::vector<std::shared_ptr<argument>>::const_iterator find_invalid_arguments() const;
+
         std::string name;
         std::string description;
         std::vector<std::shared_ptr<argument>> arguments;
@@ -516,6 +519,11 @@ namespace px
                 argv = argument->parse(argv, end);
             }
         }
+
+        if (auto invalid_arg = find_invalid_arguments();  invalid_arg != arguments.cend())
+        {
+            throw std::runtime_error("invalid argument'" + (*invalid_arg)->get_name() + "' after parsing");
+        }
     }
 
     inline void command_line::parse(int argc, char** argv)
@@ -533,5 +541,11 @@ namespace px
             arg->print_help(o);
         }
         o << "\n";
+    }
+
+    inline std::vector<std::shared_ptr<argument>>::const_iterator command_line::find_invalid_arguments() const
+    {
+        return std::find_if_not(arguments.cbegin(), arguments.cend(), 
+            [](auto& arg) { return arg->is_valid(); });
     }
 }

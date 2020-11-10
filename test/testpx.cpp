@@ -95,6 +95,7 @@ TEST_F(PxValueArgTest, ThrowsOnGettingValueFromValuelessArg)
         .set_required("--float");
     // required and no value -> invalid
     EXPECT_THROW(arg.get_value(), std::runtime_error);
+    EXPECT_FALSE(arg.is_valid());
 }
 
 TEST_F(PxValueArgTest, CanParseStringValueArg)
@@ -116,7 +117,7 @@ TEST_F(PxValueArgTest, RequiredArgWithoutValueIsInvalid)
 
     constexpr auto i = 5;
     std::vector<std::string> args = { "piet" };
-    cli.parse(args);
+    EXPECT_THROW(cli.parse(args), std::runtime_error);
     EXPECT_FALSE(arg.is_valid());
 
     args = { "piet", "-i", std::to_string(i) };
@@ -162,10 +163,8 @@ TEST_F(PxValueArgTest, CanParseAndValidatePath)
     EXPECT_TRUE(arg.is_valid());
 
     args.back() += "_not_exist....";
-    cli.parse(args);
-    EXPECT_FALSE(arg.is_valid());
+    EXPECT_THROW(cli.parse(args), std::runtime_error);
 }
-
 
 class PxFlagArgTest : public PxTest
 {
@@ -262,7 +261,7 @@ TEST_F(PxMultiValueArgTest, CanValidateMultiArgWithCustomValidator)
         .set_required(true)
         .set_validator(all_less_than_3);
 
-    cli.parse(make_multi_arg());
+    EXPECT_THROW(cli.parse(make_multi_arg()), std::runtime_error);
     EXPECT_FALSE(arg.is_valid());
 
     arg.set_validator(all_less_than_5);

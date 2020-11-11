@@ -99,6 +99,7 @@ namespace px
     class argument
     {
     public:
+        virtual ~argument() = default;
         virtual void print_help(std::ostream&) const = 0;
         virtual argv_iterator parse(const argv_iterator&, const argv_iterator&) = 0;
         virtual bool is_valid() const = 0;
@@ -117,6 +118,8 @@ namespace px
             name(n)
         {
         }
+
+        virtual ~positional_argument<T>() = default;
 
         void print_help(std::ostream&) const override;
         argv_iterator parse(const argv_iterator&, const argv_iterator&) override;
@@ -207,6 +210,8 @@ namespace px
             tag(t)
         {
         }
+
+        virtual ~tag_argument() = default;
 
         const std::string& get_name() const override;
         const std::string& get_tag() const;
@@ -304,6 +309,7 @@ namespace px
 
         value_argument(std::string_view n, std::string_view t);
 
+        virtual ~value_argument() = default;
         const value_type& get_value() const;
         value_argument<T>& bind(T*);
 
@@ -412,6 +418,8 @@ namespace px
         using validation_function = std::function<bool(const std::vector<T>&)>;
 
         multi_value_argument(std::string_view, std::string_view);
+        virtual ~multi_value_argument() = default;
+
         void print_help(std::ostream&) const override;
         const value_type& get_value() const;
         multi_value_argument<T>& bind(std::vector<T>*);
@@ -515,6 +523,7 @@ namespace px
         using base = tag_argument<flag_argument>;
 
         flag_argument(std::string_view, std::string_view);
+        virtual ~flag_argument() = default;
 
         flag_argument& bind(bool*);
         bool get_value() const;

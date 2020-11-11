@@ -74,7 +74,7 @@ namespace detail
     }
 
     template <typename Iterator>
-    Iterator find_invalid_arguments(const Iterator& begin, const Iterator& end)
+    Iterator find_invalid(const Iterator& begin, const Iterator& end)
     {
         return std::find_if_not(begin, end, [](auto& arg) { return arg->is_valid(); });
     }
@@ -82,15 +82,57 @@ namespace detail
     template <typename Iterator>
     void throw_on_invalid(const Iterator& begin, const Iterator& end)
     {
-        if (Iterator invalid_arg = find_invalid_arguments(begin, end); invalid_arg != end)
+        if (Iterator invalid_arg = find_invalid(begin, end); invalid_arg != end)
         {
-            throw std::runtime_error("invalid argument'" + (*invalid_arg)->get_name() + "' after parsing");
+            throw std::runtime_error("argument '" + (*invalid_arg)->get_name() + "' invalid after parsing");
         }
     }
 }
 
 namespace px
 {
+    template <typename T>
+    class scalar_storage
+    {
+    public:
+        using value_type = T;
+        bool has_value() const;
+        const value_type& get_value() const;
+        template <typename Iterator>
+        Iterator parse(const Iterator& begin, const Iterator& end);
+
+    private:
+        std::optional<value_type> value = std::nullopt;
+    };
+
+    template <>
+    class scalar_storage<bool>
+    {
+    public:
+        using value_type = bool;
+        bool has_value() const;
+        const value_type& get_value() const;
+        template <typename Iterator>
+        Iterator parse(const Iterator& begin, const Iterator& end);
+    private:
+        bool value = false;
+    };
+
+    template <typename T>
+    class multi_scalar_storage
+    {
+    public:
+        using value_type = std::vector<T>;
+        bool has_value() const;
+        const value_type& get_value() const;
+
+        template <typename Iterator>
+        Iterator parse(const Iterator& begin, const Iterator& end);
+
+    private:
+       value_type value;
+    };
+
 #ifdef PX_HAS_SPAN
     using argv_iterator = std::span<const std::string>::iterator;
 #else
@@ -99,13 +141,22 @@ namespace px
     class argument
     {
     public:
+        argument(std::string_view n);
+
         virtual ~argument() = default;
         virtual void print_help(std::ostream&) const = 0;
         virtual argv_iterator parse(const argv_iterator&, const argv_iterator&) = 0;
         virtual bool is_valid() const = 0;
-        virtual const std::string& get_name() const = 0;
-    };
+        
+        const std::string& get_name() const;
+        const std::string& get_description() const;
+        void set_description(std::string_view d);
 
+    private:
+        std::string name;
+        std::string description;
+    };
+    
     template <typename T>
     class positional_argument : public argument
     {
@@ -114,8 +165,7 @@ namespace px
         using validation_function = std::function<bool(const value_type&)>;
 
         positional_argument(std::string_view n) :
-            argument(),
-            name(n)
+            argument(n)
         {
         }
 
@@ -124,8 +174,7 @@ namespace px
         void print_help(std::ostream&) const override;
         argv_iterator parse(const argv_iterator&, const argv_iterator&) override;
         bool is_valid() const override;
-        const std::string& get_name() const override;
-
+        
         const value_type& get_value() const;
         positional_argument<T>& bind(T*);
 
@@ -133,20 +182,199 @@ namespace px
         positional_argument<T>& set_validator(validation_function);
 
     private:
-        std::string name;
-        std::string description;
-
         std::optional<value_type> value = std::nullopt;
         value_type* bound_variable = nullptr;
         validation_function validator = [](const auto&) { return true; };
     };
 
+    template <typename derived>
+    class tag_argument : public argument
+    {
+    public:
+        tag_argument(std::string_view n, std::string_view t) :
+            argument(n),
+            tag(t)
+        {
+        }
+
+        virtual ~tag_argument() = default;
+
+        const std::string& get_tag() const;
+
+        const std::string& get_alternate_tag() const;
+        derived& set_alternate_tag(std::string_view);
+
+        const std::string& get_description() const;
+        derived& set_description(std::string_view);
+
+        void print_help(std::ostream& o) const override;
+
+    protected:
+        bool matches(std::string_view) const;
+
+    private:
+        derived& this_as_derived();
+
+        std::string tag;
+        std::string alternate_tag;
+    };
+
+    template <typename T, typename storage = scalar_storage<T>>
+    class value_argument : public tag_argument<value_argument<T>>
+    {
+    public:
+        using base = tag_argument<value_argument<T>>;
+        using value_type = typename storage::value_type;
+        using validation_function = std::function<bool(const value_type&)>;
+
+        value_argument(std::string_view n, std::string_view t);
+
+        virtual ~value_argument() = default;
+        const value_type& get_value() const;
+        value_argument<T, storage>& bind(value_type*);
+
+        bool is_required() const;
+        value_argument<T, storage>& set_required(bool);
+        value_argument<T, storage>& set_validator(validation_function);
+
+        bool is_valid() const override;
+        void print_help(std::ostream&) const override;
+        argv_iterator parse(const argv_iterator&, const argv_iterator&) override;
+
+    private:
+        storage value;
+        value_type* bound_variable = nullptr;
+        bool required = false;
+        validation_function validator = [](const auto&) { return true; };
+    };
+
+    class flag_argument : public tag_argument<flag_argument>
+    {
+    public:
+        using base = tag_argument<flag_argument>;
+
+        flag_argument(std::string_view, std::string_view);
+        virtual ~flag_argument() = default;
+
+        flag_argument& bind(bool*);
+        bool get_value() const;
+
+        bool is_valid() const override;
+        void print_help(std::ostream&) const override;
+        argv_iterator parse(const argv_iterator&, const argv_iterator&) override;
+    private:
+        bool value = false;
+        bool* bound_variable = nullptr;
+    };
+
+    class command_line
+    {
+    public:
+        command_line(std::string_view program_name);
+
+        flag_argument& add_flag_argument(std::string_view, std::string_view);
+        template <typename T>
+        value_argument<T>& add_value_argument(std::string_view, std::string_view);
+        template <typename T>
+        value_argument<T, multi_scalar_storage<T>>& add_multi_value_argument(std::string_view name, std::string_view);
+        template <typename T>
+        positional_argument<T>& add_positional_argument(std::string_view);
+
+        void print_help(std::ostream&);
+#ifdef PX_HAS_SPAN
+        void parse(std::span<const std::string>);
+#else
+        void parse(const std::vector<std::string>&);
+#endif
+        void parse(int argc, char** argv);
+
+    private:
+        bool has_positional_arguments() const;
+        void prevent_tag_args_after_positional_args();
+
+        std::string name;
+        std::string description;
+        std::vector<std::shared_ptr<argument>> arguments;
+        std::vector<std::shared_ptr<argument>> positional_arguments;
+    };
+
     template <typename T>
-    const std::string& ::px::positional_argument<T>::get_name() const
+    const typename scalar_storage<T>::value_type& scalar_storage<T>::get_value() const
+    {
+        if (has_value())
+        {
+            return *value;
+        }
+        else
+        {
+            throw std::runtime_error("does not have value");
+        }
+    }
+
+    template <typename T>
+    bool scalar_storage<T>::has_value() const
+    {
+        return value.has_value();
+    }
+
+    template <typename T>
+    template <typename Iterator>
+    Iterator scalar_storage<T>::parse(const Iterator& begin, const Iterator& end)
+    {
+        value = detail::parse_scalar<T>(*begin);
+        return begin;
+    }
+
+    template <typename T>
+    bool multi_scalar_storage<T>::has_value() const
+    {
+        return !std::empty(value);
+    }
+
+    template <typename T>
+    const typename multi_scalar_storage<T>::value_type& multi_scalar_storage<T>::get_value() const
+    {
+        return value;
+    }
+
+    template <typename T>
+    template <typename Iterator>
+    Iterator multi_scalar_storage<T>::parse(const Iterator& begin, const Iterator& end)
+    {
+        auto i = begin;
+        if (std::distance(begin, end))
+        {
+            for (; i != end && !detail::is_tag(*i); ++i)
+            {
+                value.push_back(detail::parse_scalar<T>(*i));
+            }
+
+            --i;
+        }
+
+        return i;
+    }
+
+    inline argument::argument(std::string_view n) :
+        name(n)
+    {
+    }
+
+    inline const std::string& argument::get_name() const
     {
         return name;
     }
-       
+
+    inline void argument::set_description(std::string_view d)
+    {
+        description = d;
+    }
+
+    inline const std::string& argument::get_description() const
+    {
+        return description;
+    }
+
     template <typename T>
     positional_argument<T>& positional_argument<T>::bind(positional_argument<T>::value_type* t)
     {
@@ -158,8 +386,8 @@ namespace px
     void positional_argument<T>::print_help(std::ostream& o) const
     {
         o << "   "
-            << name << " "
-            << description
+            << get_name() << " "
+            << get_description()
             << "\n";
     }
 
@@ -184,7 +412,7 @@ namespace px
         }
         else
         {
-            throw std::runtime_error("getting value from invalid argument '" + name + "'");
+            throw std::runtime_error("getting value from invalid argument '" + get_name() + "'");
         }
     }
 
@@ -201,51 +429,10 @@ namespace px
         return begin;
     }
 
-    template <typename derived>
-    class tag_argument : public argument
-    {
-    public:
-        tag_argument(std::string_view n, std::string_view t) :
-            name(n),
-            tag(t)
-        {
-        }
-
-        virtual ~tag_argument() = default;
-
-        const std::string& get_name() const override;
-        const std::string& get_tag() const;
-
-        const std::string& get_alternate_tag() const;
-        derived& set_alternate_tag(std::string_view);
-
-        const std::string& get_description() const;
-        derived& set_description(std::string_view);
-
-        void print_help(std::ostream& o) const override;
-
-    protected:
-        bool matches(std::string_view) const;
-
-    private:
-        derived& this_as_derived();
-
-        std::string name;
-        std::string description;
-        std::string tag;
-        std::string alternate_tag;
-    };
-
     template <typename T>
     bool tag_argument<T>::matches(std::string_view s) const
     {
         return (!tag.empty() && tag == s) || (!alternate_tag.empty() && alternate_tag == s);
-    }
-
-    template <typename T>
-    const std::string& tag_argument<T>::get_name() const
-    {
-        return name;
     }
 
     template <typename T>
@@ -257,20 +444,20 @@ namespace px
             << ((!alternate_tag.empty()) ?
                 ", " + detail::pad_right(alternate_tag, alternate_tag_size - 2) :
                 detail::pad_right("", alternate_tag_size))
-            << description
+            << get_description()
             << "\n";
     }
 
     template <typename T>
     const std::string& tag_argument<T>::get_description() const
     {
-        return description;
+        return argument::get_description();
     }
 
     template <typename T>
     T& tag_argument<T>::set_description(std::string_view d)
     {
-        description = d;
+        argument::set_description(d);
         return this_as_derived();
     }
 
@@ -299,107 +486,77 @@ namespace px
         return *reinterpret_cast<T*>(this);
     }
 
-    template <typename T>
-    class value_argument : public tag_argument<value_argument<T>>
-    {
-    public:
-        using base = tag_argument<value_argument<T>>;
-        using value_type = T;
-        using validation_function = std::function<bool(const value_type&)>;
-
-        value_argument(std::string_view n, std::string_view t);
-
-        virtual ~value_argument() = default;
-        const value_type& get_value() const;
-        value_argument<T>& bind(T*);
-
-        bool is_required() const;
-        value_argument<T>& set_required(bool);
-
-        value_argument<T>& set_validator(validation_function);
-
-        bool is_valid() const override;
-        void print_help(std::ostream&) const override;
-        argv_iterator parse(const argv_iterator&, const argv_iterator&) override;
-
-    private:
-        std::optional<value_type> value = std::nullopt;
-        value_type* bound_variable = nullptr;
-        bool required = false;
-        validation_function validator = [](const auto&) { return true; };
-    };
-
-    template <typename T>
-    value_argument<T>::value_argument(std::string_view n, std::string_view t) :
+    template <typename T, typename storage>
+    value_argument<T, storage>::value_argument(std::string_view n, std::string_view t) :
         base(n, t)
     {
     }
 
-    template <typename T>
-    value_argument<T>& value_argument<T>::bind(T* t)
+    template <typename T, typename storage>
+    value_argument<T, storage>& value_argument<T, storage>::bind(value_type* t)
     {
         bound_variable = t;
         return *this;
     }
 
-    template <typename T>
-    bool value_argument<T>::is_required() const
+    template <typename T, typename storage>
+    bool value_argument<T, storage>::is_required() const
     {
         return required;
     }
 
-    template <typename T>
-    value_argument<T>& value_argument<T>::set_required(bool b)
+    template <typename T, typename storage>
+    value_argument<T, storage>& value_argument<T, storage>::set_required(bool b)
     {
         required = b;
         return *this;
     }
 
-    template <typename T>
-    value_argument<T>& value_argument<T>::set_validator(typename value_argument<T>::validation_function f)
+    template <typename T, typename storage>
+    value_argument<T, storage>& value_argument<T, storage>::set_validator(typename value_argument<T, storage>::validation_function f)
     {
         validator = std::move(f);
         return *this;
     }
 
-    template <typename T>
-    const typename value_argument<T>::value_type& value_argument<T>::get_value() const
+    template <typename T, typename storage>
+    const typename value_argument<T, storage>::value_type& value_argument<T, storage>::get_value() const
     {
         if (!is_valid())
         {
             throw std::runtime_error("getting value from invalid argument '" + base::get_name() + "'");
         }
-        return *value;
+        return value.get_value();
     }
 
-    template <typename T>
-    void value_argument<T>::print_help(std::ostream& o) const
+    template <typename T, typename storage>
+    void value_argument<T, storage>::print_help(std::ostream& o) const
     {
         base::print_help(o);
     }
 
-    template <typename T>
-    bool value_argument<T>::is_valid() const
+    template <typename T, typename storage>
+    bool value_argument<T, storage>::is_valid() const
     {
         if (value.has_value())
         {
-            return validator(*value);
+            return validator(value.get_value());
         }
         else return !required;
     }
 
-    template <typename T>
+    template <typename T, typename storage>
     argv_iterator
-        value_argument<T>::parse(const argv_iterator& begin,
+        value_argument<T, storage>::parse(const argv_iterator& begin,
             const argv_iterator& end)
     {
         if (std::distance(begin, end) > 1 && base::matches(*begin))
         {
             auto i = std::next(begin);
-            value = detail::parse_scalar<value_type>(*i);
+            i = value.parse(i, end);
             if (bound_variable != nullptr)
             {
-                *bound_variable = *value;
+                *bound_variable = value.get_value();
             }
             return i;
         }
@@ -408,133 +565,6 @@ namespace px
             return begin;
         }
     }
-
-    template <typename T>
-    class multi_value_argument : public tag_argument<multi_value_argument<T>>
-    {
-    public:
-        using base = tag_argument<multi_value_argument<T>>;
-        using value_type = std::vector<T>;
-        using validation_function = std::function<bool(const std::vector<T>&)>;
-
-        multi_value_argument(std::string_view, std::string_view);
-        virtual ~multi_value_argument() = default;
-
-        void print_help(std::ostream&) const override;
-        const value_type& get_value() const;
-        multi_value_argument<T>& bind(std::vector<T>*);
-
-        bool is_required() const;
-        multi_value_argument<T>& set_required(bool);
-        multi_value_argument<T>& set_validator(validation_function);
-        bool is_valid() const override;
-        argv_iterator parse(const argv_iterator&, const argv_iterator&) override;
-    private:
-        bool required = false;
-        value_type value;
-        value_type* bound_variable = nullptr;
-        validation_function validator = [](const auto&) { return true; };
-    };
-
-    template <typename T>
-    multi_value_argument<T>::multi_value_argument(std::string_view n, std::string_view t) :
-        base(n, t)
-    {
-    }
-
-    template <typename T>
-    multi_value_argument<T>& multi_value_argument<T>::bind(std::vector<T>* v)
-    {
-        bound_variable = v;
-        return *this;
-    }
-
-    template <typename T>
-    const std::vector<T>& multi_value_argument<T>::get_value() const
-    {
-        if (!is_valid())
-        {
-            throw std::runtime_error("getting value from invalid argument '" + base::get_name() + "'");
-        }
-        
-        return value;
-    }
-
-    template <typename T>
-    bool multi_value_argument<T>::is_required() const
-    {
-        return required;
-    }
-
-    template <typename T>
-    multi_value_argument<T>& multi_value_argument<T>::set_required(bool b)
-    {
-        required = b;
-        return *this;
-    }
-
-    template <typename T>
-    multi_value_argument<T>& multi_value_argument<T>::set_validator(typename multi_value_argument<T>::validation_function f)
-    {
-        validator = std::move(f);
-        return *this;
-    }
-
-    template <typename T>
-    bool multi_value_argument<T>::is_valid() const
-    {
-        if (required)
-        {
-            return !value.empty() && validator(value);
-        }
-        else return true;
-    }
-
-    template <typename T>
-    void multi_value_argument<T>::print_help(std::ostream& o) const
-    {
-        base::print_help(o);
-    }
-
-    template <typename T>
-    argv_iterator multi_value_argument<T>::parse(const argv_iterator& begin, const argv_iterator& end)
-    {
-        auto i = begin;
-        if (std::distance(begin, end) > 1 && base::matches(*begin))
-        {
-            for (i = std::next(i); i != end && !detail::is_tag(*i); ++i)
-            {
-                value.push_back(detail::parse_scalar<T>(*i));
-            }
-
-            if (bound_variable != nullptr)
-            {
-                *bound_variable = value;
-            }
-            --i;
-        }
-
-        return i;
-    }
-
-    class flag_argument : public tag_argument<flag_argument>
-    {
-    public:
-        using base = tag_argument<flag_argument>;
-
-        flag_argument(std::string_view, std::string_view);
-        virtual ~flag_argument() = default;
-
-        flag_argument& bind(bool*);
-        bool get_value() const;
-
-        bool is_valid() const override;
-        void print_help(std::ostream&) const override;
-        argv_iterator parse(const argv_iterator&, const argv_iterator&) override;
-    private:
-        bool value = false;
-        bool* bound_variable = nullptr;
-    };
 
     flag_argument::flag_argument(std::string_view n, std::string_view t) :
         tag_argument<flag_argument>(n, t)
@@ -578,38 +608,7 @@ namespace px
     {
         return value;
     }
-
-    class command_line
-    {
-    public:
-        command_line(std::string_view program_name);
-
-        flag_argument& add_flag_argument(std::string_view, std::string_view);
-        template <typename T>
-        value_argument<T>& add_value_argument(std::string_view, std::string_view);
-        template <typename T>
-        multi_value_argument<T>& add_multi_value_argument(std::string_view name, std::string_view);
-        template <typename T>
-        positional_argument<T>& add_positional_argument(std::string_view);
-
-        void print_help(std::ostream&);
-#ifdef PX_HAS_SPAN
-        void parse(std::span<const std::string>);
-#else
-        void parse(const std::vector<std::string>&);
-#endif
-        void parse(int argc, char** argv);
-
-    private:
-        bool has_positional_arguments() const;
-        void prevent_tag_args_after_positional_args();
-
-        std::string name;
-        std::string description;
-        std::vector<std::shared_ptr<argument>> arguments;
-        std::vector<std::shared_ptr<argument>> positional_arguments;
-    };
-
+    
     command_line::command_line(std::string_view program_name) :
         name(program_name)
     {
@@ -641,10 +640,10 @@ namespace px
     }
 
     template <typename T>
-    multi_value_argument<T>& command_line::add_multi_value_argument(std::string_view name, std::string_view tag)
+    value_argument<T, multi_scalar_storage<T>>& command_line::add_multi_value_argument(std::string_view name, std::string_view tag)
     {
         prevent_tag_args_after_positional_args();
-        auto arg = std::make_shared<multi_value_argument<T>>(name, tag);
+        auto arg = std::make_shared<value_argument<T, multi_scalar_storage<T>>>(name, tag);
         arguments.push_back(arg);
         return *arg;
     }
@@ -690,15 +689,13 @@ namespace px
                 }
             }
 
-            if (auto invalid_arg = detail::find_invalid_arguments(positional_arguments.cbegin(), positional_arguments.cend());
+            if (auto invalid_arg = detail::find_invalid(positional_arguments.cbegin(), positional_arguments.cend());
                 invalid_arg != positional_arguments.cend())
             {
                 throw std::runtime_error("invalid argument'" + (*invalid_arg)->get_name() + "' after parsing");
             }            
         }
     }
-/*
-    piet -i 1 -f pos it ional*/
 
     inline void command_line::parse(int argc, char** argv)
     {

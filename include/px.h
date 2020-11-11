@@ -187,24 +187,24 @@ namespace px
     };
 
     template <typename T, typename storage = scalar_storage<T>>
-    class value_argument : public argument
+    class tag_argument : public argument
     {
     public:
         using value_type = typename storage::value_type;
         using validation_function = std::function<bool(const value_type&)>;
 
-        value_argument(std::string_view n, std::string_view t);
-        virtual ~value_argument() = default;
+        tag_argument(std::string_view n, std::string_view t);
+        virtual ~tag_argument() = default;
 
         const value_type& get_value() const;
-        value_argument<T, storage>& bind(value_type*);
+        tag_argument<T, storage>& bind(value_type*);
 
         template <typename U = T, typename = std::enable_if<!std::is_same_v<U, bool>>>
         bool is_required() const;
         template <typename U = T, typename = std::enable_if<!std::is_same_v<U, bool>>>
-        value_argument<T, storage>& set_required(bool);
+        tag_argument<T, storage>& set_required(bool);
         template <typename U = T, typename = std::enable_if<!std::is_same_v<U, bool>>>
-        value_argument<T, storage>& set_validator(validation_function f);
+        tag_argument<T, storage>& set_validator(validation_function f);
 
         bool is_valid() const override;
         void print_help(std::ostream&) const override;
@@ -213,10 +213,10 @@ namespace px
         const std::string& get_tag() const;
 
         const std::string& get_alternate_tag() const;
-        value_argument<T, storage>& set_alternate_tag(std::string_view);
+        tag_argument<T, storage>& set_alternate_tag(std::string_view);
 
         const std::string& get_description() const;
-        value_argument<T, storage>& set_description(std::string_view);
+        tag_argument<T, storage>& set_description(std::string_view);
 
     protected:
         bool matches(std::string_view) const;
@@ -236,11 +236,11 @@ namespace px
     public:
         command_line(std::string_view program_name);
 
-        value_argument<bool, scalar_storage<bool>>& add_flag_argument(std::string_view, std::string_view);
+        tag_argument<bool, scalar_storage<bool>>& add_flag_argument(std::string_view, std::string_view);
         template <typename T>
-        value_argument<T>& add_value_argument(std::string_view, std::string_view);
+        tag_argument<T>& add_value_argument(std::string_view, std::string_view);
         template <typename T>
-        value_argument<T, multi_scalar_storage<T>>& add_multi_value_argument(std::string_view name, std::string_view);
+        tag_argument<T, multi_scalar_storage<T>>& add_multi_value_argument(std::string_view name, std::string_view);
         template <typename T>
         positional_argument<T>& add_positional_argument(std::string_view);
 
@@ -411,52 +411,52 @@ namespace px
     }
 
     template <typename T, typename storage>
-    bool value_argument<T, storage>::matches(std::string_view s) const
+    bool tag_argument<T, storage>::matches(std::string_view s) const
     {
         return (!tag.empty() && tag == s) || (!alternate_tag.empty() && alternate_tag == s);
     }
 
     template <typename T, typename storage>
-    const std::string& value_argument<T, storage>::get_description() const
+    const std::string& tag_argument<T, storage>::get_description() const
     {
         return argument::get_description();
     }
 
     template <typename T, typename storage>
-    value_argument<T, storage>& value_argument<T, storage>::set_description(std::string_view d)
+    tag_argument<T, storage>& tag_argument<T, storage>::set_description(std::string_view d)
     {
         argument::set_description(d);
         return *this;
     }
 
     template <typename T, typename storage>
-    const std::string& value_argument<T, storage>::get_tag() const
+    const std::string& tag_argument<T, storage>::get_tag() const
     {
         return tag;
     }
 
     template <typename T, typename storage>
-    const std::string& value_argument<T, storage>::get_alternate_tag() const
+    const std::string& tag_argument<T, storage>::get_alternate_tag() const
     {
         return alternate_tag;
     }
 
     template <typename T, typename storage>
-    value_argument<T, storage>& value_argument<T, storage>::set_alternate_tag(std::string_view t)
+    tag_argument<T, storage>& tag_argument<T, storage>::set_alternate_tag(std::string_view t)
     {
         alternate_tag = t;
         return *this;
     }
 
     template <typename T, typename storage>
-    value_argument<T, storage>::value_argument(std::string_view n, std::string_view t) :
+    tag_argument<T, storage>::tag_argument(std::string_view n, std::string_view t) :
         argument(n),
         tag(t)
     {
     }
 
     template <typename T, typename storage>
-    value_argument<T, storage>& value_argument<T, storage>::bind(value_type* t)
+    tag_argument<T, storage>& tag_argument<T, storage>::bind(value_type* t)
     {
         bound_variable = t;
         return *this;
@@ -464,14 +464,14 @@ namespace px
 
     template <typename T, typename storage>
     template <typename U, typename>
-    bool value_argument<T, storage>::is_required() const
+    bool tag_argument<T, storage>::is_required() const
     {
         return required;
     }
 
     template <typename T, typename storage>
     template <typename U, typename>
-    value_argument<T, storage>& value_argument<T, storage>::set_required(bool r)
+    tag_argument<T, storage>& tag_argument<T, storage>::set_required(bool r)
     {
         required = r;
         return *this;
@@ -479,14 +479,14 @@ namespace px
 
     template <typename T, typename storage>
     template <typename U, typename>
-    value_argument<T, storage>& value_argument<T, storage>::set_validator(validation_function f)
+    tag_argument<T, storage>& tag_argument<T, storage>::set_validator(validation_function f)
     {
         validator = std::move(f);
         return *this;
     }
 
     template <typename T, typename storage>
-    const typename value_argument<T, storage>::value_type& value_argument<T, storage>::get_value() const
+    const typename tag_argument<T, storage>::value_type& tag_argument<T, storage>::get_value() const
     {
         if (!is_valid())
         {
@@ -496,7 +496,7 @@ namespace px
     }
 
     template <typename T, typename storage>
-    void value_argument<T, storage>::print_help(std::ostream& o) const
+    void tag_argument<T, storage>::print_help(std::ostream& o) const
     {
         constexpr auto alternate_tag_size = 15;
         o << "   "
@@ -509,7 +509,7 @@ namespace px
     }
 
     template <typename T, typename storage>
-    bool value_argument<T, storage>::is_valid() const
+    bool tag_argument<T, storage>::is_valid() const
     {
         if (value.has_value())
         {
@@ -520,7 +520,7 @@ namespace px
 
     template <typename T, typename storage>
     argv_iterator
-        value_argument<T, storage>::parse(const argv_iterator& begin,
+        tag_argument<T, storage>::parse(const argv_iterator& begin,
             const argv_iterator& end)
     {
         if (std::distance(begin, end) >= 1 && matches(*begin))
@@ -556,28 +556,28 @@ namespace px
         return *arg;
     }
 
-    inline value_argument<bool, scalar_storage<bool>>& command_line::add_flag_argument(std::string_view name, std::string_view tag)
+    inline tag_argument<bool, scalar_storage<bool>>& command_line::add_flag_argument(std::string_view name, std::string_view tag)
     {
         prevent_tag_args_after_positional_args();
-        auto arg = std::make_shared<value_argument<bool, scalar_storage<bool>>>(name, tag);
+        auto arg = std::make_shared<tag_argument<bool, scalar_storage<bool>>>(name, tag);
         arguments.push_back(arg);
         return *arg;
     }
 
     template <typename T>
-    value_argument<T>& command_line::add_value_argument(std::string_view name, std::string_view tag)
+    tag_argument<T>& command_line::add_value_argument(std::string_view name, std::string_view tag)
     {
         prevent_tag_args_after_positional_args();
-        auto arg = std::make_shared<value_argument<T>>(name, tag);
+        auto arg = std::make_shared<tag_argument<T>>(name, tag);
         arguments.push_back(arg);
         return *arg;
     }
 
     template <typename T>
-    value_argument<T, multi_scalar_storage<T>>& command_line::add_multi_value_argument(std::string_view name, std::string_view tag)
+    tag_argument<T, multi_scalar_storage<T>>& command_line::add_multi_value_argument(std::string_view name, std::string_view tag)
     {
         prevent_tag_args_after_positional_args();
-        auto arg = std::make_shared<value_argument<T, multi_scalar_storage<T>>>(name, tag);
+        auto arg = std::make_shared<tag_argument<T, multi_scalar_storage<T>>>(name, tag);
         arguments.push_back(arg);
         return *arg;
     }

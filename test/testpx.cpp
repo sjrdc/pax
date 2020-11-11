@@ -285,7 +285,7 @@ namespace px_tests
             flag_arg = std::ref(cli.add_flag_argument("flag", "-f"));
         }
 
-        std::optional<std::reference_wrapper<px::flag_argument>> flag_arg;
+        std::optional<std::reference_wrapper<px::value_argument<bool, px::scalar_storage<bool>>>> flag_arg;
     };
 
     TEST_F(px_flag_arg_test, flag_arg_value_is_false_by_default)

@@ -73,16 +73,16 @@ namespace detail
             (!is_separator_tag(s) && s[0] == '-' && s.size() > 2 && s[1] == '-'));
     }
 
-    template <typename Iterator>
-    Iterator find_invalid(const Iterator& begin, const Iterator& end)
+    template <typename iterator>
+    iterator find_invalid(const iterator& begin, const iterator& end)
     {
         return std::find_if_not(begin, end, [](auto& arg) { return arg->is_valid(); });
     }
 
-    template <typename Iterator>
-    void throw_on_invalid(const Iterator& begin, const Iterator& end)
+    template <typename iterator>
+    void throw_on_invalid(const iterator& begin, const iterator& end)
     {
-        if (Iterator invalid_arg = find_invalid(begin, end); invalid_arg != end)
+        if (iterator invalid_arg = find_invalid(begin, end); invalid_arg != end)
         {
             throw std::runtime_error("argument '" + (*invalid_arg)->get_name() + "' invalid after parsing");
         }
@@ -98,8 +98,8 @@ namespace px
         using value_type = T;
         bool has_value() const;
         const value_type& get_value() const;
-        template <typename Iterator>
-        Iterator parse(const Iterator& begin, const Iterator& end);
+        template <typename iterator>
+        iterator parse(const iterator& begin, const iterator& end);
 
     private:
         std::optional<value_type> value = std::nullopt;
@@ -112,8 +112,8 @@ namespace px
         using value_type = bool;
         bool has_value() const;
         const value_type& get_value() const;
-        template <typename Iterator>
-        Iterator parse(const Iterator& begin, const Iterator& end);
+        template <typename iterator>
+        iterator parse(const iterator& begin, const iterator& end);
     private:
         bool value = false;
     };
@@ -126,8 +126,8 @@ namespace px
         bool has_value() const;
         const value_type& get_value() const;
 
-        template <typename Iterator>
-        Iterator parse(const Iterator& begin, const Iterator& end);
+        template <typename iterator>
+        iterator parse(const iterator& begin, const iterator& end);
 
     private:
        value_type value;
@@ -227,15 +227,17 @@ namespace px
         using validation_function = std::function<bool(const value_type&)>;
 
         value_argument(std::string_view n, std::string_view t);
-
         virtual ~value_argument() = default;
+
         const value_type& get_value() const;
         value_argument<T, storage>& bind(value_type*);
 
+        template <typename U = T, typename = std::enable_if<!std::is_same_v<U, bool>>>
         bool is_required() const;
-
+        template <typename U = T, typename = std::enable_if<!std::is_same_v<U, bool>>>
         value_argument<T, storage>& set_required(bool);
-        value_argument<T, storage>& set_validator(validation_function);
+        template <typename U = T, typename = std::enable_if<!std::is_same_v<U, bool>>>
+        value_argument<T, storage>& set_validator(validation_function f);
 
         bool is_valid() const override;
         void print_help(std::ostream&) const override;
@@ -248,31 +250,12 @@ namespace px
         validation_function validator = [](const auto&) { return true; };
     };
 
-    class flag_argument : public tag_argument<flag_argument>
-    {
-    public:
-        using base = tag_argument<flag_argument>;
-
-        flag_argument(std::string_view, std::string_view);
-        virtual ~flag_argument() = default;
-
-        flag_argument& bind(bool*);
-        bool get_value() const;
-
-        bool is_valid() const override;
-        void print_help(std::ostream&) const override;
-        argv_iterator parse(const argv_iterator&, const argv_iterator&) override;
-    private:
-        bool value = false;
-        bool* bound_variable = nullptr;
-    };
-
     class command_line
     {
     public:
         command_line(std::string_view program_name);
 
-        flag_argument& add_flag_argument(std::string_view, std::string_view);
+        value_argument<bool, scalar_storage<bool>>& add_flag_argument(std::string_view, std::string_view);
         template <typename T>
         value_argument<T>& add_value_argument(std::string_view, std::string_view);
         template <typename T>
@@ -289,7 +272,6 @@ namespace px
         void parse(int argc, char** argv);
 
     private:
-        bool has_positional_arguments() const;
         void prevent_tag_args_after_positional_args();
 
         std::string name;
@@ -318,10 +300,28 @@ namespace px
     }
 
     template <typename T>
-    template <typename Iterator>
-    Iterator scalar_storage<T>::parse(const Iterator& begin, const Iterator& end)
+    template <typename iterator>
+    iterator scalar_storage<T>::parse(const iterator& begin, const iterator& end)
     {
         value = detail::parse_scalar<T>(*begin);
+        return begin;
+    }
+
+    inline const scalar_storage<bool>::value_type& scalar_storage<bool>::get_value() const
+    {
+        return value;
+    }
+
+    inline bool scalar_storage<bool>::has_value() const
+    {
+        return true;
+    }
+
+    template <typename iterator>
+    iterator scalar_storage<bool>::parse(const iterator& begin, const iterator& end)
+    {
+
+        value = true;
         return begin;
     }
 
@@ -338,8 +338,8 @@ namespace px
     }
 
     template <typename T>
-    template <typename Iterator>
-    Iterator multi_scalar_storage<T>::parse(const Iterator& begin, const Iterator& end)
+    template <typename iterator>
+    iterator multi_scalar_storage<T>::parse(const iterator& begin, const iterator& end)
     {
         auto i = begin;
         if (std::distance(begin, end))
@@ -500,20 +500,23 @@ namespace px
     }
 
     template <typename T, typename storage>
+    template <typename U, typename>
     bool value_argument<T, storage>::is_required() const
     {
         return required;
     }
 
     template <typename T, typename storage>
-    value_argument<T, storage>& value_argument<T, storage>::set_required(bool b)
+    template <typename U, typename>
+    value_argument<T, storage>& value_argument<T, storage>::set_required(bool r)
     {
-        required = b;
+        required = r;
         return *this;
     }
 
     template <typename T, typename storage>
-    value_argument<T, storage>& value_argument<T, storage>::set_validator(typename value_argument<T, storage>::validation_function f)
+    template <typename U, typename>
+    value_argument<T, storage>& value_argument<T, storage>::set_validator(validation_function f)
     {
         validator = std::move(f);
         return *this;
@@ -550,9 +553,13 @@ namespace px
         value_argument<T, storage>::parse(const argv_iterator& begin,
             const argv_iterator& end)
     {
-        if (std::distance(begin, end) > 1 && base::matches(*begin))
+        if (std::distance(begin, end) >= 1 && base::matches(*begin))
         {
-            auto i = std::next(begin);
+            auto i = begin;
+            if constexpr (!std::is_same_v<T, bool>) // i.e. flag arg
+            {
+                ++i;
+            }
             i = value.parse(i, end);
             if (bound_variable != nullptr)
             {
@@ -565,50 +572,7 @@ namespace px
             return begin;
         }
     }
-
-    flag_argument::flag_argument(std::string_view n, std::string_view t) :
-        tag_argument<flag_argument>(n, t)
-    {
-    }
-
-    void flag_argument::print_help(std::ostream& o) const
-    {
-        base::print_help(o);
-    }
-
-    flag_argument& flag_argument::bind(bool* b)
-    {
-        bound_variable = b;
-        *bound_variable = value;
-        return *this;
-    }
-
-    bool flag_argument::is_valid() const
-    {
-        return true;
-    }
-
-    argv_iterator
-        flag_argument::parse(const argv_iterator& begin,
-            const argv_iterator& end)
-    {
-        if (std::distance(begin, end) >= 1 && base::matches(*begin))
-        {
-            value = true;
-            if (bound_variable != nullptr)
-            {
-                *bound_variable = value;
-            }
-        }
-
-        return begin;
-    }
-
-    bool flag_argument::get_value() const
-    {
-        return value;
-    }
-    
+        
     command_line::command_line(std::string_view program_name) :
         name(program_name)
     {
@@ -622,10 +586,10 @@ namespace px
         return *arg;
     }
 
-    inline flag_argument& command_line::add_flag_argument(std::string_view name, std::string_view tag)
+    inline value_argument<bool, scalar_storage<bool>>& command_line::add_flag_argument(std::string_view name, std::string_view tag)
     {
         prevent_tag_args_after_positional_args();
-        auto arg = std::make_shared<flag_argument>(name, tag);
+        auto arg = std::make_shared<value_argument<bool, scalar_storage<bool>>>(name, tag);
         arguments.push_back(arg);
         return *arg;
     }

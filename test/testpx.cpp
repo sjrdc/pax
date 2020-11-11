@@ -203,7 +203,7 @@ namespace px_tests
     TEST_F(px_value_arg_test, throws_on_getting_value_from_valueless_arg)
     {
         auto& arg = cli.add_value_argument<float>("some float", "-f")
-            .set_required("--float");
+            .set_required(true);
         // required and no value -> invalid
         EXPECT_THROW(arg.get_value(), std::runtime_error);
         EXPECT_FALSE(arg.is_valid());

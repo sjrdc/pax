@@ -178,7 +178,6 @@ namespace px
         const value_type& get_value() const;
         positional_argument<T>& bind(T*);
 
-        positional_argument<T>& set_required(bool);
         positional_argument<T>& set_validator(validation_function);
 
     private:
@@ -234,6 +233,7 @@ namespace px
         value_argument<T, storage>& bind(value_type*);
 
         bool is_required() const;
+
         value_argument<T, storage>& set_required(bool);
         value_argument<T, storage>& set_validator(validation_function);
 

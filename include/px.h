@@ -92,7 +92,7 @@ namespace detail
 namespace px
 {
     template <typename T>
-    class scalar_storage
+    class scalar
     {
     public:
         using value_type = T;
@@ -106,7 +106,7 @@ namespace px
     };
 
     template <>
-    class scalar_storage<bool>
+    class scalar<bool>
     {
     public:
         using value_type = bool;
@@ -119,7 +119,7 @@ namespace px
     };
 
     template <typename T>
-    class multi_scalar_storage
+    class multi_scalar
     {
     public:
         using value_type = std::vector<T>;
@@ -186,7 +186,7 @@ namespace px
         validation_function validator = [](const auto&) { return true; };
     };
 
-    template <typename T, typename storage = scalar_storage<T>>
+    template <typename T, typename storage = scalar<T>>
     class tag_argument : public argument
     {
     public:
@@ -203,15 +203,15 @@ namespace px
         bool is_required() const;
         template <typename U = T, typename = std::enable_if<!std::is_same_v<U, bool>>>
         tag_argument<T, storage>& set_required(bool);
+        
         template <typename U = T, typename = std::enable_if<!std::is_same_v<U, bool>>>
         tag_argument<T, storage>& set_validator(validation_function f);
-
         bool is_valid() const override;
+
         void print_help(std::ostream&) const override;
         argv_iterator parse(const argv_iterator&, const argv_iterator&) override;
 
         const std::string& get_tag() const;
-
         const std::string& get_alternate_tag() const;
         tag_argument<T, storage>& set_alternate_tag(std::string_view);
 
@@ -236,11 +236,11 @@ namespace px
     public:
         command_line(std::string_view program_name);
 
-        tag_argument<bool, scalar_storage<bool>>& add_flag_argument(std::string_view, std::string_view);
+        tag_argument<bool, scalar<bool>>& add_flag_argument(std::string_view, std::string_view);
         template <typename T>
         tag_argument<T>& add_value_argument(std::string_view, std::string_view);
         template <typename T>
-        tag_argument<T, multi_scalar_storage<T>>& add_multi_value_argument(std::string_view name, std::string_view);
+        tag_argument<T, multi_scalar<T>>& add_multi_value_argument(std::string_view name, std::string_view);
         template <typename T>
         positional_argument<T>& add_positional_argument(std::string_view);
 
@@ -262,7 +262,7 @@ namespace px
     };
 
     template <typename T>
-    const typename scalar_storage<T>::value_type& scalar_storage<T>::get_value() const
+    const typename scalar<T>::value_type& scalar<T>::get_value() const
     {
         if (has_value())
         {
@@ -275,31 +275,31 @@ namespace px
     }
 
     template <typename T>
-    bool scalar_storage<T>::has_value() const
+    bool scalar<T>::has_value() const
     {
         return value.has_value();
     }
 
     template <typename T>
     template <typename iterator>
-    iterator scalar_storage<T>::parse(const iterator& begin, const iterator& end)
+    iterator scalar<T>::parse(const iterator& begin, const iterator& end)
     {
         value = detail::parse_scalar<T>(*begin);
         return begin;
     }
 
-    inline const scalar_storage<bool>::value_type& scalar_storage<bool>::get_value() const
+    inline const scalar<bool>::value_type& scalar<bool>::get_value() const
     {
         return value;
     }
 
-    inline bool scalar_storage<bool>::has_value() const
+    inline bool scalar<bool>::has_value() const
     {
         return true;
     }
 
     template <typename iterator>
-    iterator scalar_storage<bool>::parse(const iterator& begin, const iterator& end)
+    iterator scalar<bool>::parse(const iterator& begin, const iterator& end)
     {
 
         value = true;
@@ -307,20 +307,20 @@ namespace px
     }
 
     template <typename T>
-    bool multi_scalar_storage<T>::has_value() const
+    bool multi_scalar<T>::has_value() const
     {
         return !std::empty(value);
     }
 
     template <typename T>
-    const typename multi_scalar_storage<T>::value_type& multi_scalar_storage<T>::get_value() const
+    const typename multi_scalar<T>::value_type& multi_scalar<T>::get_value() const
     {
         return value;
     }
 
     template <typename T>
     template <typename iterator>
-    iterator multi_scalar_storage<T>::parse(const iterator& begin, const iterator& end)
+    iterator multi_scalar<T>::parse(const iterator& begin, const iterator& end)
     {
         auto i = begin;
         if (std::distance(begin, end))
@@ -556,10 +556,10 @@ namespace px
         return *arg;
     }
 
-    inline tag_argument<bool, scalar_storage<bool>>& command_line::add_flag_argument(std::string_view name, std::string_view tag)
+    inline tag_argument<bool, scalar<bool>>& command_line::add_flag_argument(std::string_view name, std::string_view tag)
     {
         prevent_tag_args_after_positional_args();
-        auto arg = std::make_shared<tag_argument<bool, scalar_storage<bool>>>(name, tag);
+        auto arg = std::make_shared<tag_argument<bool, scalar<bool>>>(name, tag);
         arguments.push_back(arg);
         return *arg;
     }
@@ -574,10 +574,10 @@ namespace px
     }
 
     template <typename T>
-    tag_argument<T, multi_scalar_storage<T>>& command_line::add_multi_value_argument(std::string_view name, std::string_view tag)
+    tag_argument<T, multi_scalar<T>>& command_line::add_multi_value_argument(std::string_view name, std::string_view tag)
     {
         prevent_tag_args_after_positional_args();
-        auto arg = std::make_shared<tag_argument<T, multi_scalar_storage<T>>>(name, tag);
+        auto arg = std::make_shared<tag_argument<T, multi_scalar<T>>>(name, tag);
         arguments.push_back(arg);
         return *arg;
     }

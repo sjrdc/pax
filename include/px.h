@@ -32,6 +32,7 @@
 #endif
 #include <string_view>
 #include <vector>
+#include <iterator>
 
 namespace detail
 {
@@ -60,11 +61,31 @@ namespace detail
         }
     }
 
+    bool is_separator_tag(const std::string& s)
+    {
+        return s.size() == 2 && s[0] == '-' && s[1] == '-';
+    }
+
     bool is_tag(const std::string& s)
     {
         return !s.empty() &&
             ((s[0] == '-' && s.size() > 1 && !std::isdigit(s[1])) ||
-            (s[0] == '-' && s.size() > 2 && s[1] == '-'));
+            (!is_separator_tag(s) && s[0] == '-' && s.size() > 2 && s[1] == '-'));
+    }
+
+    template <typename Iterator>
+    Iterator find_invalid_arguments(const Iterator& begin, const Iterator& end)
+    {
+        return std::find_if_not(begin, end, [](auto& arg) { return arg->is_valid(); });
+    }
+
+    template <typename Iterator>
+    void throw_on_invalid(const Iterator& begin, const Iterator& end)
+    {
+        if (Iterator invalid_arg = find_invalid_arguments(begin, end); invalid_arg != end)
+        {
+            throw std::runtime_error("invalid argument'" + (*invalid_arg)->get_name() + "' after parsing");
+        }
     }
 }
 
@@ -83,6 +104,99 @@ namespace px
         virtual bool is_valid() const = 0;
         virtual const std::string& get_name() const = 0;
     };
+
+    template <typename T>
+    class positional_argument : public argument
+    {
+    public:
+        using value_type = T;
+        using validation_function = std::function<bool(const value_type&)>;
+
+        positional_argument(std::string_view n) :
+            argument(),
+            name(n)
+        {
+        }
+
+        void print_help(std::ostream&) const override;
+        argv_iterator parse(const argv_iterator&, const argv_iterator&) override;
+        bool is_valid() const override;
+        const std::string& get_name() const override;
+
+        const value_type& get_value() const;
+        positional_argument<T>& bind(T*);
+
+        positional_argument<T>& set_required(bool);
+        positional_argument<T>& set_validator(validation_function);
+
+    private:
+        std::string name;
+        std::string description;
+
+        std::optional<value_type> value = std::nullopt;
+        value_type* bound_variable = nullptr;
+        validation_function validator = [](const auto&) { return true; };
+    };
+
+    template <typename T>
+    const std::string& ::px::positional_argument<T>::get_name() const
+    {
+        return name;
+    }
+       
+    template <typename T>
+    positional_argument<T>& positional_argument<T>::bind(positional_argument<T>::value_type* t)
+    {
+        bound_variable = t;
+        return *this;
+    }
+
+    template <typename T>
+    void positional_argument<T>::print_help(std::ostream& o) const
+    {
+        o << "   "
+            << name << " "
+            << description
+            << "\n";
+    }
+
+    template <typename T>
+    positional_argument<T>& positional_argument<T>::set_validator(validation_function f)
+    {
+        validator = std::move(f);
+    }
+
+    template <typename T>
+    bool positional_argument<T>::is_valid() const
+    {
+        return value.has_value() && validator(*value);
+    }
+
+    template <typename T>
+    const typename positional_argument<T>::value_type& positional_argument<T>::get_value() const
+    {
+        if (value.has_value())
+        {
+            return *value;
+        }
+        else
+        {
+            throw std::runtime_error("getting value from invalid argument '" + name + "'");
+        }
+    }
+
+    template <typename T>
+    argv_iterator
+        positional_argument<T>::parse(const argv_iterator& begin,
+            const argv_iterator& end)
+    {
+        value = detail::parse_scalar<value_type>(*begin);
+        if (bound_variable != nullptr)
+        {
+            *bound_variable = *value;
+        }
+        return begin;
+    }
 
     template <typename derived>
     class tag_argument : public argument
@@ -466,6 +580,8 @@ namespace px
         value_argument<T>& add_value_argument(std::string_view, std::string_view);
         template <typename T>
         multi_value_argument<T>& add_multi_value_argument(std::string_view name, std::string_view);
+        template <typename T>
+        positional_argument<T>& add_positional_argument(std::string_view);
 
         void print_help(std::ostream&);
 #ifdef PX_HAS_SPAN
@@ -476,21 +592,31 @@ namespace px
         void parse(int argc, char** argv);
 
     private:
-        std::vector<std::shared_ptr<argument>>::const_iterator find_invalid_arguments() const;
+        bool has_positional_arguments() const;
+        void prevent_tag_args_after_positional_args();
 
         std::string name;
         std::string description;
         std::vector<std::shared_ptr<argument>> arguments;
+        std::vector<std::shared_ptr<argument>> positional_arguments;
     };
-
 
     command_line::command_line(std::string_view program_name) :
         name(program_name)
     {
     }
 
+    template <typename T>
+    inline positional_argument<T>& command_line::add_positional_argument(std::string_view name)
+    {
+        auto arg = std::make_shared<positional_argument<T>>(name);
+        positional_arguments.push_back(arg);
+        return *arg;
+    }
+
     inline flag_argument& command_line::add_flag_argument(std::string_view name, std::string_view tag)
     {
+        prevent_tag_args_after_positional_args();
         auto arg = std::make_shared<flag_argument>(name, tag);
         arguments.push_back(arg);
         return *arg;
@@ -499,6 +625,7 @@ namespace px
     template <typename T>
     value_argument<T>& command_line::add_value_argument(std::string_view name, std::string_view tag)
     {
+        prevent_tag_args_after_positional_args();
         auto arg = std::make_shared<value_argument<T>>(name, tag);
         arguments.push_back(arg);
         return *arg;
@@ -507,10 +634,13 @@ namespace px
     template <typename T>
     multi_value_argument<T>& command_line::add_multi_value_argument(std::string_view name, std::string_view tag)
     {
+        prevent_tag_args_after_positional_args();
         auto arg = std::make_shared<multi_value_argument<T>>(name, tag);
         arguments.push_back(arg);
         return *arg;
     }
+
+    
 #ifdef PX_HAS_SPAN
     inline void command_line::parse(std::span<const std::string> args)
 #else
@@ -518,19 +648,48 @@ namespace px
 #endif
     {
         auto end = args.cend();
-        for (auto argv = args.begin(); argv != end; ++argv)
-        {
-            for (auto& argument : arguments)
-            {
-                argv = argument->parse(argv, end);
-            }
-        }
+        auto argv = args.cbegin();
 
-        if (auto invalid_arg = find_invalid_arguments();  invalid_arg != arguments.cend())
+        bool separator_found = false;
+        if (std::distance(argv, end) >= 1)
         {
-            throw std::runtime_error("invalid argument'" + (*invalid_arg)->get_name() + "' after parsing");
+            ++argv;
+            for (; argv != end && !separator_found; ++argv)
+            {
+                separator_found = detail::is_separator_tag(*argv);
+                for (auto& argument : arguments)
+                {
+                    argv = argument->parse(argv, end);
+                }
+            }
+
+            detail::throw_on_invalid(arguments.cbegin(), arguments.cend());
+
+            if (!separator_found)
+            {
+                argv = std::next(args.cbegin());
+            }
+            else
+            {
+            }
+
+            for (; argv != end; ++argv)
+            {
+                for (auto& argument : positional_arguments)
+                {
+                    argv = argument->parse(argv, end);
+                }
+            }
+
+            if (auto invalid_arg = detail::find_invalid_arguments(positional_arguments.cbegin(), positional_arguments.cend());
+                invalid_arg != positional_arguments.cend())
+            {
+                throw std::runtime_error("invalid argument'" + (*invalid_arg)->get_name() + "' after parsing");
+            }            
         }
     }
+/*
+    piet -i 1 -f pos it ional*/
 
     inline void command_line::parse(int argc, char** argv)
     {
@@ -547,11 +706,13 @@ namespace px
             arg->print_help(o);
         }
         o << "\n";
-    }
+    }   
 
-    inline std::vector<std::shared_ptr<argument>>::const_iterator command_line::find_invalid_arguments() const
+    inline void command_line::prevent_tag_args_after_positional_args()
     {
-        return std::find_if_not(arguments.cbegin(), arguments.cend(), 
-            [](auto& arg) { return arg->is_valid(); });
+        if (!positional_arguments.empty())
+        {
+            throw std::logic_error("tag arguments cannot be given after positional arguments");
+        }
     }
 }

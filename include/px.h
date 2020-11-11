@@ -186,43 +186,10 @@ namespace px
         validation_function validator = [](const auto&) { return true; };
     };
 
-    template <typename derived>
-    class tag_argument : public argument
-    {
-    public:
-        tag_argument(std::string_view n, std::string_view t) :
-            argument(n),
-            tag(t)
-        {
-        }
-
-        virtual ~tag_argument() = default;
-
-        const std::string& get_tag() const;
-
-        const std::string& get_alternate_tag() const;
-        derived& set_alternate_tag(std::string_view);
-
-        const std::string& get_description() const;
-        derived& set_description(std::string_view);
-
-        void print_help(std::ostream& o) const override;
-
-    protected:
-        bool matches(std::string_view) const;
-
-    private:
-        derived& this_as_derived();
-
-        std::string tag;
-        std::string alternate_tag;
-    };
-
     template <typename T, typename storage = scalar_storage<T>>
-    class value_argument : public tag_argument<value_argument<T>>
+    class value_argument : public argument
     {
     public:
-        using base = tag_argument<value_argument<T>>;
         using value_type = typename storage::value_type;
         using validation_function = std::function<bool(const value_type&)>;
 
@@ -243,7 +210,21 @@ namespace px
         void print_help(std::ostream&) const override;
         argv_iterator parse(const argv_iterator&, const argv_iterator&) override;
 
-    private:
+        const std::string& get_tag() const;
+
+        const std::string& get_alternate_tag() const;
+        value_argument<T, storage>& set_alternate_tag(std::string_view);
+
+        const std::string& get_description() const;
+        value_argument<T, storage>& set_description(std::string_view);
+
+    protected:
+        bool matches(std::string_view) const;
+
+    private:;
+
+        std::string tag;
+        std::string alternate_tag;
         storage value;
         value_type* bound_variable = nullptr;
         bool required = false;
@@ -429,66 +410,48 @@ namespace px
         return begin;
     }
 
-    template <typename T>
-    bool tag_argument<T>::matches(std::string_view s) const
+    template <typename T, typename storage>
+    bool value_argument<T, storage>::matches(std::string_view s) const
     {
         return (!tag.empty() && tag == s) || (!alternate_tag.empty() && alternate_tag == s);
     }
 
-    template <typename T>
-    void tag_argument<T>::print_help(std::ostream& o) const
-    {
-        constexpr auto alternate_tag_size = 15;
-        o << "   "
-            << tag
-            << ((!alternate_tag.empty()) ?
-                ", " + detail::pad_right(alternate_tag, alternate_tag_size - 2) :
-                detail::pad_right("", alternate_tag_size))
-            << get_description()
-            << "\n";
-    }
-
-    template <typename T>
-    const std::string& tag_argument<T>::get_description() const
+    template <typename T, typename storage>
+    const std::string& value_argument<T, storage>::get_description() const
     {
         return argument::get_description();
     }
 
-    template <typename T>
-    T& tag_argument<T>::set_description(std::string_view d)
+    template <typename T, typename storage>
+    value_argument<T, storage>& value_argument<T, storage>::set_description(std::string_view d)
     {
         argument::set_description(d);
-        return this_as_derived();
+        return *this;
     }
 
-    template <typename T>
-    const std::string& tag_argument<T>::get_tag() const
+    template <typename T, typename storage>
+    const std::string& value_argument<T, storage>::get_tag() const
     {
         return tag;
     }
 
-    template <typename T>
-    const std::string& tag_argument<T>::get_alternate_tag() const
+    template <typename T, typename storage>
+    const std::string& value_argument<T, storage>::get_alternate_tag() const
     {
         return alternate_tag;
     }
 
-    template <typename T>
-    T& tag_argument<T>::set_alternate_tag(std::string_view t)
+    template <typename T, typename storage>
+    value_argument<T, storage>& value_argument<T, storage>::set_alternate_tag(std::string_view t)
     {
         alternate_tag = t;
-        return this_as_derived();
-    }
-
-    template <typename T>
-    T& tag_argument<T>::this_as_derived()
-    {
-        return *reinterpret_cast<T*>(this);
+        return *this;
     }
 
     template <typename T, typename storage>
     value_argument<T, storage>::value_argument(std::string_view n, std::string_view t) :
-        base(n, t)
+        argument(n),
+        tag(t)
     {
     }
 
@@ -527,7 +490,7 @@ namespace px
     {
         if (!is_valid())
         {
-            throw std::runtime_error("getting value from invalid argument '" + base::get_name() + "'");
+            throw std::runtime_error("getting value from invalid argument '" + get_name() + "'");
         }
         return value.get_value();
     }
@@ -535,7 +498,14 @@ namespace px
     template <typename T, typename storage>
     void value_argument<T, storage>::print_help(std::ostream& o) const
     {
-        base::print_help(o);
+        constexpr auto alternate_tag_size = 15;
+        o << "   "
+            << tag
+            << ((!alternate_tag.empty()) ?
+                ", " + detail::pad_right(alternate_tag, alternate_tag_size - 2) :
+                detail::pad_right("", alternate_tag_size))
+            << get_description()
+            << "\n";
     }
 
     template <typename T, typename storage>
@@ -553,7 +523,7 @@ namespace px
         value_argument<T, storage>::parse(const argv_iterator& begin,
             const argv_iterator& end)
     {
-        if (std::distance(begin, end) >= 1 && base::matches(*begin))
+        if (std::distance(begin, end) >= 1 && matches(*begin))
         {
             auto i = begin;
             if constexpr (!std::is_same_v<T, bool>) // i.e. flag arg

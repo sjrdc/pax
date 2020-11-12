@@ -37,6 +37,7 @@ To get a local copy up and running follow these simple steps.
 
 ### prerequisites
 px is a header only library without any dependencies; as such there are no prerequisites, except a compiler that supports modern C++.
+Tests are written with google test and hence require the presence of this library to build and run.
 
 <!-- USAGE EXAMPLES -->
 ### example usage

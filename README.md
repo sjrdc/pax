@@ -98,7 +98,13 @@ int main(int argc, char** argv)
     return 0;
 }
 ```
-
+### option syntax
+While the aim is to provide just minimal support for option syntaxes, the following is assumed
+- an argument can be tag-based (i.e. there is a tag preceding the value) or position-based (i.e., the arguments are distinguished by their order)
+- an argument tag starts with a hyphen
+- a long argument tag starts with two hyphens
+- arguments of the two categories may both be specified when invoking a program from the command line
+- two hyphens are used to separate tag-based arguments from position-based arguments 
 <!-- ROADMAP -->
 ## Roadmap
 

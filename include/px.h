@@ -36,9 +36,10 @@
 
 namespace detail
 {
-    std::string pad_right(std::string_view s, size_t n)
+    std::string pad_right(std::string_view s, decltype(s.size()) n)
     {
-        return std::string(s).append(std::max(0u, n - s.size()), ' ');
+	constexpr decltype(s.size()) zero = 0;
+        return std::string(s).append(std::max(zero, n - s.size()), ' ');
     }
 
     template <typename T>

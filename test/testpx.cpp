@@ -353,7 +353,8 @@ namespace px_tests
     {
         auto& arg = cli.add_multi_value_argument<std::string>("multiple strings", "--strings");
 
-        cli.parse({ "piet", "--strings", "s0", "s1", "s2", "s3" });
+	std::vector<std::string> args = { "piet", "--strings", "s0", "s1", "s2", "s3" };
+        cli.parse(args);
         EXPECT_EQ(4, arg.get_value().size());
     }
 

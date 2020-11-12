@@ -71,23 +71,24 @@ int main(int argc, char** argv)
     .set_validator([](auto p) { return fs::exists(p) && fs::is_regular_file(p); });
   auto& help_arg = cli.add_flag_argument("help", "-h")
     .set_alternate_tag("--help");
-  
-  try
-  {
-    cli.parse(argc, argv);
-  }
-  catch (std::runtime_error& e)
-  {
-    if (help_arg.get_value())
-    {
-      cli.print_help(std::cout);
-      return 0;
+     
+     try
+    {	 
+cli.parse(argc, argv);
     }
-    else
+    catch (std::runtime_error& e)
     {
-      std::cerr << e.what() << "\n\n";
-      cli.print_help(std::cerr);
-      return 1;
+	if (help_arg.get_value())
+	{
+	    cli.print_help(std::cout);
+	    return 0;
+	}
+	else
+	{
+	    std::cerr << e.what() << "\n\n";
+	    cli.print_help(std::cerr);
+	    return 1;
+	}
     }
   }
   

@@ -35,26 +35,10 @@ This is meant to be an excercise in the use of some C++17 and C++20 features, as
 To get a local copy up and running follow these simple steps.
 
 ### prerequisites
-
-This is an example of how to list things you need to use the software and how to install them.
-* npm
-```sh
-npm install npm@latest -g
-```
-
-### installation
-
-1. Clone the repo
-```sh
-git clone https://github.com/sjrdc/px.git
-```
-2. Install NPM packages
-```sh
-npm install
-```
+px is a header only library without any dependencies; as such there are no prerequisites, except a compiler that supports modern C++.
 
 <!-- USAGE EXAMPLES -->
-## Usage
+### example usage
 ```c++
 #include "px.h"
 #include <filesystem>

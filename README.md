@@ -56,25 +56,25 @@ void store_kittens(const fs::path& p)
 
 int main(int argc, char** argv)
 {
-  int i = 1;
-  fs::path pth;
-  
-  px::command_line cli("the program name");
-  cli.add_value_argument<int>("integer", "-i")
-    .set_description("the number of kittens to show; must be large than 0 and 5 at most")
-    .set_validator([](auto i) { return i > 0 && i <= 5; })
-    .bind(&i);
-  cli.add_value_argument<fs::path>("path", "-p")
-    .set_required(true)
-    .set_description("the path to use for storage of the shown kittens (must be an existing file)")
-    .bind(&pth)
-    .set_validator([](auto p) { return fs::exists(p) && fs::is_regular_file(p); });
-  auto& help_arg = cli.add_flag_argument("help", "-h")
-    .set_alternate_tag("--help");
-     
-     try
-    {	 
-cli.parse(argc, argv);
+    int i = 1;
+    fs::path pth;
+    
+    px::command_line cli("the program name");
+    cli.add_value_argument<int>("integer", "-i")
+	.set_description("the number of kittens to show; must be large than 0 and 5 at most")
+	.set_validator([](auto i) { return i > 0 && i <= 5; })
+	.bind(&i);
+    cli.add_value_argument<fs::path>("path", "-p")
+	.set_required(true)
+	.set_description("the path to use for storage of the shown kittens (must be an existing file)")
+	.bind(&pth)
+	.set_validator([](auto p) { return fs::exists(p) && fs::is_regular_file(p); });
+    auto& help_arg = cli.add_flag_argument("help", "-h")
+	.set_alternate_tag("--help");
+    
+    try
+    {
+	cli.parse(argc, argv);
     }
     catch (std::runtime_error& e)
     {
@@ -87,15 +87,14 @@ cli.parse(argc, argv);
 	{
 	    std::cerr << e.what() << "\n\n";
 	    cli.print_help(std::cerr);
-	    return 1;
+	    return 1  	    ;        
 	}
     }
-  }
-  
-  show_kittens(i);
-  store_kittens(pth);
-  
-  return 0;
+    
+    show_kittens(i);
+    store_kittens(pth);
+    
+    return 0;
 }
 ```
 

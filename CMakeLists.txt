@@ -6,10 +6,13 @@ set(CXX_STANDARD_REQUIRED)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 if (WIN32)
-	set(CMAKE_PREFIX_PATH D:\\libraries\\gtest)
+  set(CMAKE_PREFIX_PATH D:\\libraries\\gtest)
+  find_package(gtest)
+  add_subdirectory(test)
 endif()
 
-find_package(gtest)
-add_subdirectory(test)
 
 add_executable(example example.cpp)
+if (UNIX)
+  target_link_libraries(example stdc++fs)
+endif()

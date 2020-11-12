@@ -62,7 +62,7 @@ namespace detail
         }
     }
 
-    bool is_separator_tag(const std::string& s)
+    bool is_separator_tag(std::string_view s)
     {
         return s.size() == 2 && s[0] == '-' && s[1] == '-';
     }
@@ -216,7 +216,6 @@ namespace px
         const std::string& get_alternate_tag() const;
         tag_argument<T, storage>& set_alternate_tag(std::string_view);
 
-        const std::string& get_description() const;
         tag_argument<T, storage>& set_description(std::string_view);
 
     protected:
@@ -418,12 +417,6 @@ namespace px
     }
 
     template <typename T, typename storage>
-    const std::string& tag_argument<T, storage>::get_description() const
-    {
-        return argument::get_description();
-    }
-
-    template <typename T, typename storage>
     tag_argument<T, storage>& tag_argument<T, storage>::set_description(std::string_view d)
     {
         argument::set_description(d);
@@ -505,7 +498,8 @@ namespace px
             << ((!alternate_tag.empty()) ?
                 ", " + detail::pad_right(alternate_tag, alternate_tag_size - 2) :
                 detail::pad_right("", alternate_tag_size))
-            << get_description()
+	  << ((required) ? "(required) " : "" )
+	  << get_description()
             << "\n";
     }
 
@@ -606,7 +600,6 @@ namespace px
                 }
             }
 
-            detail::throw_on_invalid(arguments.cbegin(), arguments.cend());
 
             if (!separator_found)
             {
@@ -623,13 +616,10 @@ namespace px
                     argv = argument->parse(argv, end);
                 }
             }
-
-            if (auto invalid_arg = detail::find_invalid(positional_arguments.cbegin(), positional_arguments.cend());
-                invalid_arg != positional_arguments.cend())
-            {
-                throw std::runtime_error("invalid argument'" + (*invalid_arg)->get_name() + "' after parsing");
-            }            
         }
+
+	detail::throw_on_invalid(arguments.cbegin(), arguments.cend());
+	detail::throw_on_invalid(positional_arguments.cbegin(), positional_arguments.cend());
     }
 
     inline void command_line::parse(int argc, char** argv)

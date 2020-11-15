@@ -11,8 +11,8 @@ if (WIN32)
   add_subdirectory(test)
 endif()
 
-
-add_executable(example example.cpp)
-if (UNIX)
-  target_link_libraries(example stdc++fs)
+message(STATUS ${CMAKE_CXX_COMPILER_ID})
+add_executable(example example/example.cpp)
+if (UNIX AND NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL "AppleClang")
+   target_link_libraries(example stdc++fs)
 endif()

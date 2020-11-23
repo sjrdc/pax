@@ -139,34 +139,46 @@ namespace px
 #else
     using argv_iterator = std::vector<std::string>::const_iterator;
 #endif
-    class argument
+    class iargument
+    {      
+    public:
+	virtual ~iargument() = default;
+        virtual void print_help(std::ostream&) const = 0;
+        virtual argv_iterator parse(const argv_iterator&, const argv_iterator&) = 0;
+        virtual bool is_valid() const = 0;
+        
+	virtual const std::string& get_name() const = 0;
+        virtual const std::string& get_description() const = 0;
+    };
+    
+    template <typename Derived>
+    class argument : public iargument
     {
     public:
         argument(std::string_view n);
 
         virtual ~argument() = default;
-        virtual void print_help(std::ostream&) const = 0;
-        virtual argv_iterator parse(const argv_iterator&, const argv_iterator&) = 0;
-        virtual bool is_valid() const = 0;
         
-        const std::string& get_name() const;
-        const std::string& get_description() const;
-        void set_description(std::string_view d);
+        const std::string& get_name() const override;
+        const std::string& get_description() const override;
+        Derived& set_description(std::string_view d);
 
     private:
+	Derived* this_as_derived() { return reinterpret_cast<Derived*>(this); }
         std::string name;
         std::string description;
     };
     
     template <typename T>
-    class positional_argument : public argument
+    class positional_argument : public  argument<positional_argument<T>>
     {
     public:
         using value_type = T;
         using validation_function = std::function<bool(const value_type&)>;
+	using base = argument<positional_argument<T>>;
 
         positional_argument(std::string_view n) :
-            argument(n)
+            base(n)
         {
         }
 
@@ -188,11 +200,12 @@ namespace px
     };
 
     template <typename T, typename storage = scalar<T>>
-    class tag_argument : public argument
+	class tag_argument : public argument<tag_argument<T, storage>>
     {
     public:
         using value_type = typename storage::value_type;
         using validation_function = std::function<bool(const value_type&)>;
+	using base = argument<tag_argument<T, storage>>;
 
         tag_argument(std::string_view n, std::string_view t);
         virtual ~tag_argument() = default;
@@ -215,8 +228,6 @@ namespace px
         const std::string& get_tag() const;
         const std::string& get_alternate_tag() const;
         tag_argument<T, storage>& set_alternate_tag(std::string_view);
-
-        tag_argument<T, storage>& set_description(std::string_view);
 
     private:
         bool matches(std::string_view) const;
@@ -254,8 +265,8 @@ namespace px
 
         std::string name;
         std::string description;
-        std::vector<std::shared_ptr<argument>> arguments;
-        std::vector<std::shared_ptr<argument>> positional_arguments;
+        std::vector<std::shared_ptr<iargument>> arguments;
+        std::vector<std::shared_ptr<iargument>> positional_arguments;
     };
 
     template <typename T>
@@ -333,22 +344,28 @@ namespace px
         return i;
     }
 
-    inline argument::argument(std::string_view n) :
+    template <typename T>
+    inline argument<T>::argument(std::string_view n) :
         name(n)
     {
     }
 
-    inline const std::string& argument::get_name() const
+    template <typename T>
+    inline const std::string& argument<T>::get_name() const
     {
         return name;
     }
 
-    inline void argument::set_description(std::string_view d)
+
+    template <typename T>
+    inline T& argument<T>::set_description(std::string_view d)
     {
         description = d;
+	return *this_as_derived();
     }
 
-    inline const std::string& argument::get_description() const
+    template <typename T>
+    inline const std::string& argument<T>::get_description() const
     {
         return description;
     }
@@ -364,8 +381,8 @@ namespace px
     void positional_argument<T>::print_help(std::ostream& o) const
     {
         o << "   "
-            << get_name() << " "
-            << get_description()
+	  << base::get_name() << " "
+	  << base::get_description()
             << "\n";
     }
 
@@ -390,7 +407,7 @@ namespace px
         }
         else
         {
-            throw std::runtime_error("getting value from invalid argument '" + get_name() + "'");
+            throw std::runtime_error("getting value from invalid argument '" + base::get_name() + "'");
         }
     }
 
@@ -414,13 +431,6 @@ namespace px
     }
 
     template <typename T, typename storage>
-    tag_argument<T, storage>& tag_argument<T, storage>::set_description(std::string_view d)
-    {
-        argument::set_description(d);
-        return *this;
-    }
-
-    template <typename T, typename storage>
     const std::string& tag_argument<T, storage>::get_tag() const
     {
         return tag;
@@ -441,7 +451,7 @@ namespace px
 
     template <typename T, typename storage>
     tag_argument<T, storage>::tag_argument(std::string_view n, std::string_view t) :
-        argument(n),
+        argument<tag_argument<T, storage>>(n),
         tag(t)
     {
     }
@@ -481,7 +491,7 @@ namespace px
     {
         if (!is_valid())
         {
-            throw std::runtime_error("getting value from invalid argument '" + get_name() + "'");
+            throw std::runtime_error("getting value from invalid argument '" + base::get_name() + "'");
         }
         return value.get_value();
     }
@@ -496,7 +506,7 @@ namespace px
                 ", " + detail::pad_right(alternate_tag, alternate_tag_size - 2) :
                 detail::pad_right("", alternate_tag_size))
 	  << ((required) ? "(required) " : "" )
-	  << get_description()
+	  << base::get_description()
             << "\n";
     }
 

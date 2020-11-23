@@ -218,11 +218,8 @@ namespace px
 
         tag_argument<T, storage>& set_description(std::string_view);
 
-    protected:
+    private:
         bool matches(std::string_view) const;
-
-    private:;
-
         std::string tag;
         std::string alternate_tag;
         storage value;

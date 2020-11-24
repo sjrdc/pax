@@ -600,20 +600,19 @@ namespace px
             ++argv;
             for (; argv != end && !separator_found; ++argv)
             {
-                separator_found = detail::is_separator_tag(*argv);
-                for (auto& argument : arguments)
+		separator_found = detail::is_separator_tag(*argv); 
+                if (!separator_found)
                 {
-                    argv = argument->parse(argv, end);
-                }
+		    for (auto& argument : arguments)
+		    {
+			argv = argument->parse(argv, end);
+		    }
+		}
             }
-
 
             if (!separator_found)
             {
                 argv = std::next(args.cbegin());
-            }
-            else
-            {
             }
 
             for (; argv != end; ++argv)

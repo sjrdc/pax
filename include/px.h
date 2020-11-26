@@ -38,7 +38,7 @@ namespace detail
 {
     std::string pad_right(std::string_view s, decltype(s.size()) n)
     {
-	constexpr decltype(s.size()) zero = 0;
+        constexpr decltype(s.size()) zero = 0;
         return std::string(s).append(std::max(zero, n - s.size()), ' ');
     }
 
@@ -131,7 +131,7 @@ namespace px
         iterator parse(const iterator& begin, const iterator& end);
 
     private:
-       value_type value;
+        value_type value;
     };
 
 #ifdef PX_HAS_SPAN
@@ -140,17 +140,17 @@ namespace px
     using argv_iterator = std::vector<std::string>::const_iterator;
 #endif
     class iargument
-    {      
+    {
     public:
-	virtual ~iargument() = default;
+        virtual ~iargument() = default;
         virtual void print_help(std::ostream&) const = 0;
         virtual argv_iterator parse(const argv_iterator&, const argv_iterator&) = 0;
         virtual bool is_valid() const = 0;
-        
-	virtual const std::string& get_name() const = 0;
+
+        virtual const std::string& get_name() const = 0;
         virtual const std::string& get_description() const = 0;
     };
-    
+
     template <typename Derived>
     class argument : public iargument
     {
@@ -158,24 +158,24 @@ namespace px
         argument(std::string_view n);
 
         virtual ~argument() = default;
-        
+
         const std::string& get_name() const override;
         const std::string& get_description() const override;
         Derived& set_description(std::string_view d);
 
     private:
-	Derived* this_as_derived() { return reinterpret_cast<Derived*>(this); }
+        Derived* this_as_derived() { return reinterpret_cast<Derived*>(this); }
         std::string name;
         std::string description;
     };
-    
+
     template <typename T>
     class positional_argument : public  argument<positional_argument<T>>
     {
     public:
         using value_type = T;
         using validation_function = std::function<bool(const value_type&)>;
-	using base = argument<positional_argument<T>>;
+        using base = argument<positional_argument<T>>;
 
         positional_argument(std::string_view n) :
             base(n)
@@ -187,7 +187,7 @@ namespace px
         void print_help(std::ostream&) const override;
         argv_iterator parse(const argv_iterator&, const argv_iterator&) override;
         bool is_valid() const override;
-        
+
         const value_type& get_value() const;
         positional_argument<T>& bind(T*);
 
@@ -200,12 +200,12 @@ namespace px
     };
 
     template <typename T, typename storage = scalar<T>>
-	class tag_argument : public argument<tag_argument<T, storage>>
+    class tag_argument : public argument<tag_argument<T, storage>>
     {
     public:
         using value_type = typename storage::value_type;
         using validation_function = std::function<bool(const value_type&)>;
-	using base = argument<tag_argument<T, storage>>;
+        using base = argument<tag_argument<T, storage>>;
 
         tag_argument(std::string_view n, std::string_view t);
         virtual ~tag_argument() = default;
@@ -217,7 +217,7 @@ namespace px
         bool is_required() const;
         template <typename U = T, typename = std::enable_if<!std::is_same_v<U, bool>>>
         tag_argument<T, storage>& set_required(bool);
-        
+
         template <typename U = T, typename = std::enable_if<!std::is_same_v<U, bool>>>
         tag_argument<T, storage>& set_validator(validation_function f);
         bool is_valid() const override;
@@ -309,7 +309,6 @@ namespace px
     template <typename iterator>
     iterator scalar<bool>::parse(const iterator& begin, const iterator& end)
     {
-
         value = true;
         return begin;
     }
@@ -356,12 +355,11 @@ namespace px
         return name;
     }
 
-
     template <typename T>
     inline T& argument<T>::set_description(std::string_view d)
     {
         description = d;
-	return *this_as_derived();
+        return *this_as_derived();
     }
 
     template <typename T>
@@ -381,8 +379,8 @@ namespace px
     void positional_argument<T>::print_help(std::ostream& o) const
     {
         o << "   "
-	  << base::get_name() << " "
-	  << base::get_description()
+            << base::get_name() << " "
+            << base::get_description()
             << "\n";
     }
 
@@ -505,8 +503,8 @@ namespace px
             << ((!alternate_tag.empty()) ?
                 ", " + detail::pad_right(alternate_tag, alternate_tag_size - 2) :
                 detail::pad_right("", alternate_tag_size))
-	  << ((required) ? "(required) " : "" )
-	  << base::get_description()
+            << ((required) ? "(required) " : "")
+            << base::get_description()
             << "\n";
     }
 
@@ -544,7 +542,7 @@ namespace px
             return begin;
         }
     }
-        
+
     command_line::command_line(std::string_view program_name) :
         name(program_name)
     {
@@ -584,7 +582,7 @@ namespace px
         return *arg;
     }
 
-    
+
 #ifdef PX_HAS_SPAN
     inline void command_line::parse(std::span<const std::string> args)
 #else
@@ -600,14 +598,14 @@ namespace px
             ++argv;
             for (; argv != end && !separator_found; ++argv)
             {
-		separator_found = detail::is_separator_tag(*argv); 
+                separator_found = detail::is_separator_tag(*argv);
                 if (!separator_found)
                 {
-		    for (auto& argument : arguments)
-		    {
-			argv = argument->parse(argv, end);
-		    }
-		}
+                    for (auto& argument : arguments)
+                    {
+                        argv = argument->parse(argv, end);
+                    }
+                }
             }
 
             if (!separator_found)
@@ -624,8 +622,8 @@ namespace px
             }
         }
 
-	detail::throw_on_invalid(arguments.cbegin(), arguments.cend());
-	detail::throw_on_invalid(positional_arguments.cbegin(), positional_arguments.cend());
+        detail::throw_on_invalid(arguments.cbegin(), arguments.cend());
+        detail::throw_on_invalid(positional_arguments.cbegin(), positional_arguments.cend());
     }
 
     inline void command_line::parse(int argc, char** argv)
@@ -643,7 +641,7 @@ namespace px
             arg->print_help(o);
         }
         o << "\n";
-    }   
+    }
 
     inline void command_line::prevent_tag_args_after_positional_args()
     {

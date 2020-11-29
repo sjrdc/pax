@@ -36,14 +36,14 @@
 
 namespace detail
 {
-    std::string pad_right(std::string_view s, decltype(s.size()) n)
+    auto pad_right(std::string_view s, decltype(s.size()) n)
     {
-	constexpr decltype(s.size()) zero = 0;
+	constexpr decltype(s.size()) zero {0};
         return std::string(s).append(std::max(zero, n - s.size()), ' ');
     }
 
     template <typename T>
-    T parse_scalar(const std::string& s)
+    auto parse_scalar(const std::string& s)
     {
         if constexpr (std::is_same_v<std::string, T>)
         {
@@ -62,12 +62,12 @@ namespace detail
         }
     }
 
-    bool is_separator_tag(std::string_view s)
+    auto is_separator_tag(std::string_view s)
     {
         return s.size() == 2 && s[0] == '-' && s[1] == '-';
     }
 
-    bool is_tag(const std::string& s)
+    auto is_tag(std::string_view s)
     {
         return !s.empty() &&
             ((s[0] == '-' && s.size() > 1 && !std::isdigit(s[1])) ||
@@ -75,7 +75,7 @@ namespace detail
     }
 
     template <typename iterator>
-    iterator find_invalid(const iterator& begin, const iterator& end)
+    auto find_invalid(const iterator& begin, const iterator& end)
     {
         return std::find_if_not(begin, end, [](auto& arg) { return arg->is_valid(); });
     }
@@ -156,7 +156,6 @@ namespace px
     {
     public:
         argument(std::string_view n);
-
         virtual ~argument() = default;
         
         const std::string& get_name() const override;
@@ -170,18 +169,14 @@ namespace px
     };
     
     template <typename T>
-    class positional_argument : public  argument<positional_argument<T>>
+    class positional_argument : public argument<positional_argument<T>>
     {
     public:
         using value_type = T;
         using validation_function = std::function<bool(const value_type&)>;
 	using base = argument<positional_argument<T>>;
 
-        positional_argument(std::string_view n) :
-            base(n)
-        {
-        }
-
+        positional_argument(std::string_view n);
         virtual ~positional_argument<T>() = default;
 
         void print_help(std::ostream&) const override;
@@ -371,6 +366,12 @@ namespace px
     }
 
     template <typename T>
+    positional_argument<T>::positional_argument(std::string_view n) :
+	positional_argument<T>::base(n)
+    {
+    }
+    
+    template <typename T>
     positional_argument<T>& positional_argument<T>::bind(positional_argument<T>::value_type* t)
     {
         bound_variable = t;
@@ -383,7 +384,7 @@ namespace px
         o << "   "
 	  << base::get_name() << " "
 	  << base::get_description()
-            << "\n";
+	  << "\n";
     }
 
     template <typename T>
@@ -591,36 +592,36 @@ namespace px
     inline void command_line::parse(const std::vector<std::string>& args)
 #endif
     {
-        auto end = args.cend();
+        const auto end = args.cend();
         auto argv = args.cbegin();
 
-        bool separator_found = false;
-        if (std::distance(argv, end) >= 1)
+	const auto parse_all = [](auto& args, auto& argv, const auto& end)
+	{
+	    std::for_each(args.begin(), args.end(), 
+			  [&argv, &end](auto& arg) { argv = arg->parse(argv, end); });
+	    return argv;
+	};
+	
+        if (std::distance(argv, end) > 0)
         {
-            ++argv;
+	    auto separator_found = false;
+	    ++argv;
             for (; argv != end && !separator_found; ++argv)
             {
-		separator_found = detail::is_separator_tag(*argv); 
+		separator_found = detail::is_separator_tag(*argv);
                 if (!separator_found)
                 {
-		    for (auto& argument : arguments)
-		    {
-			argv = argument->parse(argv, end);
-		    }
+		    argv = parse_all(arguments, argv, end);
 		}
             }
 
-            if (!separator_found)
+            if (!positional_arguments.empty())
             {
-                argv = std::next(args.cbegin());
-            }
-
-            for (; argv != end; ++argv)
-            {
-                for (auto& argument : positional_arguments)
-                {
-                    argv = argument->parse(argv, end);
-                }
+		for (argv = (!separator_found) ? std::next(args.cbegin()) : argv;
+		     argv != end; ++argv)
+		{
+		    argv = parse_all(positional_arguments, argv, end);
+		}
             }
         }
 
@@ -638,10 +639,8 @@ namespace px
         o << name
             << ((!description.empty()) ? " - " + description : "")
             << "\n";
-        for (const auto& arg : arguments)
-        {
-            arg->print_help(o);
-        }
+	std::for_each(std::begin(arguments), std::end(arguments),
+		      [&o](const auto& arg) { arg->print_help(o); });
         o << "\n";
     }   
 

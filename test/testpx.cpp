@@ -177,9 +177,9 @@ namespace px_tests
     TEST_F(px_value_arg_test, can_store_integral_value_in_bound_variable)
     {
         int q;
-        auto& arg = cli.add_value_argument<int>("some integer", "-i")
-            .set_alternate_tag("--integer")
-            .bind(&q);
+        cli.add_value_argument<int>("some integer", "-i")
+           .set_alternate_tag("--integer")
+           .bind(&q);
 
         constexpr auto i = 5;
         const std::vector<std::string> args = { "piet", "-i", std::to_string(i) };

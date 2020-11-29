@@ -325,7 +325,7 @@ namespace px
     iterator multi_scalar<T>::parse(const iterator& begin, const iterator& end)
     {
         auto i = begin;
-        if (std::distance(begin, end))
+        if (std::distance(begin, end) > 0)
         {
             for (; i != end && !detail::is_tag(*i); ++i)
             {

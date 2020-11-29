@@ -260,8 +260,8 @@ namespace px
 
         std::string name;
         std::string description;
-        std::vector<std::shared_ptr<iargument>> arguments;
-        std::vector<std::shared_ptr<iargument>> positional_arguments;
+        std::vector<std::unique_ptr<iargument>> arguments;
+        std::vector<std::unique_ptr<iargument>> positional_arguments;
     };
 
     template <typename T>
@@ -552,35 +552,39 @@ namespace px
     template <typename T>
     inline positional_argument<T>& command_line::add_positional_argument(std::string_view name)
     {
-        auto arg = std::make_shared<positional_argument<T>>(name);
-        positional_arguments.push_back(arg);
-        return *arg;
+        auto arg = std::make_unique<positional_argument<T>>(name);
+	auto& ref = *arg;
+        positional_arguments.push_back(std::move(arg));
+	return ref;
     }
 
     inline tag_argument<bool, scalar<bool>>& command_line::add_flag_argument(std::string_view name, std::string_view tag)
     {
         prevent_tag_args_after_positional_args();
-        auto arg = std::make_shared<tag_argument<bool, scalar<bool>>>(name, tag);
-        arguments.push_back(arg);
-        return *arg;
+        auto arg = std::make_unique<tag_argument<bool, scalar<bool>>>(name, tag);
+	auto& ref = *arg;
+        arguments.push_back(std::move(arg));
+	return ref;
     }
 
     template <typename T>
     tag_argument<T>& command_line::add_value_argument(std::string_view name, std::string_view tag)
     {
         prevent_tag_args_after_positional_args();
-        auto arg = std::make_shared<tag_argument<T>>(name, tag);
-        arguments.push_back(arg);
-        return *arg;
+        auto arg = std::make_unique<tag_argument<T>>(name, tag);
+	auto& ref = *arg;
+        arguments.push_back(std::move(arg));
+	return ref;
     }
 
     template <typename T>
     tag_argument<T, multi_scalar<T>>& command_line::add_multi_value_argument(std::string_view name, std::string_view tag)
     {
         prevent_tag_args_after_positional_args();
-        auto arg = std::make_shared<tag_argument<T, multi_scalar<T>>>(name, tag);
-        arguments.push_back(arg);
-        return *arg;
+        auto arg = std::make_unique<tag_argument<T, multi_scalar<T>>>(name, tag);
+	auto& ref = *arg;
+        arguments.push_back(std::move(arg));
+	return ref;
     }
 
 

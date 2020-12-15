@@ -38,14 +38,14 @@
 
 namespace detail
 {
-    std::string pad_right(std::string_view s, decltype(s.size()) n)
+    auto pad_right(std::string_view s, decltype(s.size()) n)
     {
-        constexpr decltype(s.size()) zero = 0;
+	constexpr decltype(s.size()) zero {0};
         return std::string(s).append(std::max(zero, n - s.size()), ' ');
     }
 
     template <typename T>
-    T parse_scalar(const std::string& s)
+    auto parse_scalar(const std::string& s)
     {
         if constexpr (std::is_same_v<std::string, T>)
         {
@@ -64,29 +64,29 @@ namespace detail
         }
     }
 
-    bool is_separator_tag(std::string_view s)
+    auto is_separator_tag(std::string_view s)
     {
         return s.size() == 2 && s[0] == '-' && s[1] == '-';
     }
 
-    bool is_short_tag(std::string_view s)
+    auto is_short_tag(std::string_view s)
     {
         return (s.size() > 1 && s[0] == '-' && !std::isdigit(s[1]));
     }
 
-    bool is_alternate_tag(std::string_view s)
+    auto is_alternate_tag(std::string_view s)
     {
         return (s.size() > 2 && s[0] == '-' && s[1] == '-' && !std::isdigit(s[2]));
     }
 
-    bool is_tag(const std::string& s)
+    auto is_tag(const std::string& s)
     {
         return !s.empty() && !is_separator_tag(s) &&
              (is_short_tag(s) || is_alternate_tag(s));
     }
 
     template <typename iterator>
-    iterator find_invalid(const iterator& begin, const iterator& end)
+    auto find_invalid(const iterator& begin, const iterator& end)
     {
         return std::find_if_not(begin, end, [](auto& arg) { return arg->is_valid(); });
     }
@@ -167,7 +167,6 @@ namespace px
     {
     public:
         argument(std::string_view n);
-
         virtual ~argument() = default;
 
         const std::string& get_name() const override;
@@ -181,18 +180,14 @@ namespace px
     };
 
     template <typename T>
-    class positional_argument : public  argument<positional_argument<T>>
+    class positional_argument : public argument<positional_argument<T>>
     {
     public:
         using value_type = T;
         using validation_function = std::function<bool(const value_type&)>;
         using base = argument<positional_argument<T>>;
 
-        positional_argument(std::string_view n) :
-            base(n)
-        {
-        }
-
+        positional_argument(std::string_view n);
         virtual ~positional_argument<T>() = default;
 
         void print_help(std::ostream&) const override;
@@ -276,8 +271,8 @@ namespace px
 
         std::string name;
         std::string description;
-        std::vector<std::shared_ptr<iargument>> arguments;
-        std::vector<std::shared_ptr<iargument>> positional_arguments;
+        std::vector<std::unique_ptr<iargument>> arguments;
+        std::vector<std::unique_ptr<iargument>> positional_arguments;
     };
 
     template <typename T>
@@ -341,7 +336,7 @@ namespace px
     iterator multi_scalar<T>::parse(const iterator& begin, const iterator& end)
     {
         auto i = begin;
-        if (std::distance(begin, end))
+        if (std::distance(begin, end) > 0)
         {
             for (; i != end && !detail::is_tag(*i); ++i)
             {
@@ -380,6 +375,12 @@ namespace px
     }
 
     template <typename T>
+    positional_argument<T>::positional_argument(std::string_view n) :
+	positional_argument<T>::base(n)
+    {
+    }
+    
+    template <typename T>
     positional_argument<T>& positional_argument<T>::bind(positional_argument<T>::value_type* t)
     {
         bound_variable = t;
@@ -390,9 +391,9 @@ namespace px
     void positional_argument<T>::print_help(std::ostream& o) const
     {
         o << "   "
-            << base::get_name() << " "
-            << base::get_description()
-            << "\n";
+	  << base::get_name() << " "
+	  << base::get_description()
+	  << "\n";
     }
 
     template <typename T>
@@ -562,35 +563,39 @@ namespace px
     template <typename T>
     inline positional_argument<T>& command_line::add_positional_argument(std::string_view name)
     {
-        auto arg = std::make_shared<positional_argument<T>>(name);
-        positional_arguments.push_back(arg);
-        return *arg;
+        auto arg = std::make_unique<positional_argument<T>>(name);
+	auto& ref = *arg;
+        positional_arguments.push_back(std::move(arg));
+	return ref;
     }
 
     inline tag_argument<bool, scalar<bool>>& command_line::add_flag_argument(std::string_view name, std::string_view tag)
     {
         prevent_tag_args_after_positional_args();
-        auto arg = std::make_shared<tag_argument<bool, scalar<bool>>>(name, tag);
-        arguments.push_back(arg);
-        return *arg;
+        auto arg = std::make_unique<tag_argument<bool, scalar<bool>>>(name, tag);
+	auto& ref = *arg;
+        arguments.push_back(std::move(arg));
+	return ref;
     }
 
     template <typename T>
     tag_argument<T>& command_line::add_value_argument(std::string_view name, std::string_view tag)
     {
         prevent_tag_args_after_positional_args();
-        auto arg = std::make_shared<tag_argument<T>>(name, tag);
-        arguments.push_back(arg);
-        return *arg;
+        auto arg = std::make_unique<tag_argument<T>>(name, tag);
+	auto& ref = *arg;
+        arguments.push_back(std::move(arg));
+	return ref;
     }
 
     template <typename T>
     tag_argument<T, multi_scalar<T>>& command_line::add_multi_value_argument(std::string_view name, std::string_view tag)
     {
         prevent_tag_args_after_positional_args();
-        auto arg = std::make_shared<tag_argument<T, multi_scalar<T>>>(name, tag);
-        arguments.push_back(arg);
-        return *arg;
+        auto arg = std::make_unique<tag_argument<T, multi_scalar<T>>>(name, tag);
+	auto& ref = *arg;
+        arguments.push_back(std::move(arg));
+	return ref;
     }
 
 
@@ -600,36 +605,36 @@ namespace px
     inline void command_line::parse(const std::vector<std::string>& args)
 #endif
     {
-        auto end = args.cend();
+        const auto end = args.cend();
         auto argv = args.cbegin();
 
-        bool separator_found = false;
-        if (std::distance(argv, end) >= 1)
+	const auto parse_all = [](auto& args, auto& argv, const auto& end)
+	{
+	    std::for_each(args.begin(), args.end(), 
+			  [&argv, &end](auto& arg) { argv = arg->parse(argv, end); });
+	    return argv;
+	};
+	
+        if (std::distance(argv, end) > 0)
         {
-            ++argv;
+	    auto separator_found = false;
+	    ++argv;
             for (; argv != end && !separator_found; ++argv)
             {
-                separator_found = detail::is_separator_tag(*argv);
+		separator_found = detail::is_separator_tag(*argv);
                 if (!separator_found)
                 {
-                    for (auto& argument : arguments)
-                    {
-                        argv = argument->parse(argv, end);
-                    }
-                }
+		    argv = parse_all(arguments, argv, end);
+		}
             }
 
-            if (!separator_found)
+            if (!positional_arguments.empty())
             {
-                argv = std::next(args.cbegin());
-            }
-
-            for (; argv != end; ++argv)
-            {
-                for (auto& argument : positional_arguments)
-                {
-                    argv = argument->parse(argv, end);
-                }
+		for (argv = (!separator_found) ? std::next(args.cbegin()) : argv;
+		     argv != end; ++argv)
+		{
+		    argv = parse_all(positional_arguments, argv, end);
+		}
             }
         }
 
@@ -647,10 +652,8 @@ namespace px
         o << name
             << ((!description.empty()) ? " - " + description : "")
             << "\n";
-        for (const auto& arg : arguments)
-        {
-            arg->print_help(o);
-        }
+	std::for_each(std::begin(arguments), std::end(arguments),
+		      [&o](const auto& arg) { arg->print_help(o); });
         o << "\n";
     }
 

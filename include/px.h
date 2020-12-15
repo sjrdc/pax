@@ -16,6 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 #include <algorithm>
 #include <cctype>
 #if __has_include(<format>)
@@ -67,11 +69,20 @@ namespace detail
         return s.size() == 2 && s[0] == '-' && s[1] == '-';
     }
 
+    bool is_short_tag(std::string_view s)
+    {
+        return (s.size() > 1 && s[0] == '-' && !std::isdigit(s[1]));
+    }
+
+    bool is_alternate_tag(std::string_view s)
+    {
+        return (s.size() > 2 && s[0] == '-' && s[1] == '-' && !std::isdigit(s[2]));
+    }
+
     bool is_tag(const std::string& s)
     {
-        return !s.empty() &&
-            ((s[0] == '-' && s.size() > 1 && !std::isdigit(s[1])) ||
-            (!is_separator_tag(s) && s[0] == '-' && s.size() > 2 && s[1] == '-'));
+        return !s.empty() && !is_separator_tag(s) &&
+             (is_short_tag(s) || is_alternate_tag(s));
     }
 
     template <typename iterator>

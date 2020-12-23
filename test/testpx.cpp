@@ -221,7 +221,7 @@ namespace px_tests
         EXPECT_EQ(s, arg.get_value());
     }
 
-    TEST_F(px_value_arg_test, RequiredArgWithoutValueIsInvalid)
+    TEST_F(px_value_arg_test, required_arg_without_value_is_invalid)
     {
         auto& arg = cli.add_value_argument<int>("some integer", "-i")
             .set_required(true);

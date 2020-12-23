@@ -31,6 +31,8 @@ namespace
     {
         return std::all_of(std::cbegin(v), std::cend(v), [](auto i) { return i < 5; });
     };
+
+    const std::string programName("piet");
 }
 
 namespace px_tests
@@ -65,7 +67,7 @@ namespace px_tests
 
         constexpr auto i = 4;
         constexpr auto j = 3;
-        const std::vector<std::string> args{ "piet", "-i", std::to_string(i), "-f", "--", std::to_string(j) };
+        const std::vector<std::string> args{ programName, "-i", std::to_string(i), "-f", "--", std::to_string(j) };
         cli.parse(args);
 
         EXPECT_EQ(q, i);
@@ -86,14 +88,14 @@ namespace px_tests
             .bind(&r);
 
         constexpr auto j = 3;
-        std::vector<std::string> args{ "piet", std::to_string(j) };
+        std::vector<std::string> args{ programName, std::to_string(j) };
         cli.parse(args);
 
         EXPECT_EQ(j, r);
         EXPECT_FALSE(flag);
 
         // the same thing but with a separator
-        args = { "piet", "--", std::to_string(j) };
+        args = { programName, "--", std::to_string(j) };
         cli.parse(args);
 
         EXPECT_EQ(j, r);
@@ -114,7 +116,7 @@ namespace px_tests
         cli.add_positional_argument<int>("integer")
             .bind(&q);
 
-        const std::vector<std::string> args = { "piet" };
+        const std::vector<std::string> args = { programName };
         EXPECT_THROW(cli.parse(args), std::runtime_error);
     }
 
@@ -123,7 +125,7 @@ namespace px_tests
         auto& arg = cli.add_positional_argument<int>("integer");
 
         constexpr auto i = 5;
-        const std::vector<std::string> args = { "piet", std::to_string(i) };
+        const std::vector<std::string> args = { programName, std::to_string(i) };
 
         EXPECT_NO_THROW(cli.parse(args));
         EXPECT_EQ(i, arg.get_value());
@@ -133,8 +135,8 @@ namespace px_tests
     {
         auto& arg = cli.add_positional_argument<std::string>("string");
 
-        static const std::string s("piet");
-        const std::vector<std::string> args = { "piet", s };
+        static const std::string s(programName);
+        const std::vector<std::string> args = { programName, s };
 
         EXPECT_NO_THROW(cli.parse(args));
         EXPECT_EQ(s, arg.get_value());
@@ -147,7 +149,7 @@ namespace px_tests
             .bind(&q);
 
         constexpr auto i = 5;
-        const std::vector<std::string> args = { "piet", std::to_string(i) };
+        const std::vector<std::string> args = { programName, std::to_string(i) };
 
         EXPECT_NO_THROW(cli.parse(args));
         EXPECT_EQ(i, q);
@@ -168,7 +170,7 @@ namespace px_tests
             .set_alternate_tag("--integer");
 
         constexpr auto i = 5;
-        const std::vector<std::string> args = { "piet", "-i", std::to_string(i) };
+        const std::vector<std::string> args = { programName, "-i", std::to_string(i) };
         cli.parse(args);
 
         EXPECT_EQ(i, arg.get_value());
@@ -182,7 +184,7 @@ namespace px_tests
            .bind(&q);
 
         constexpr auto i = 5;
-        const std::vector<std::string> args = { "piet", "-i", std::to_string(i) };
+        const std::vector<std::string> args = { programName, "-i", std::to_string(i) };
         cli.parse(args);
 
         EXPECT_EQ(q, i);
@@ -194,7 +196,7 @@ namespace px_tests
             .set_alternate_tag("--float");
 
         constexpr auto f = 1.23f;
-        const std::vector<std::string> args = { "piet", "-f", std::to_string(f) };
+        const std::vector<std::string> args = { programName, "-f", std::to_string(f) };
         cli.parse(args);
 
         EXPECT_FLOAT_EQ(f, arg.get_value());
@@ -215,7 +217,7 @@ namespace px_tests
             .set_alternate_tag("--string");
 
         const std::string s("jannssen");
-        const std::vector<std::string> args = { "piet", "-s", s };
+        const std::vector<std::string> args = { programName, "-s", s };
         cli.parse(args);
 
         EXPECT_EQ(s, arg.get_value());
@@ -227,11 +229,11 @@ namespace px_tests
             .set_required(true);
 
         constexpr auto i = 5;
-        std::vector<std::string> args = { "piet" };
+        std::vector<std::string> args = { programName };
         EXPECT_THROW(cli.parse(args), std::runtime_error);
         EXPECT_FALSE(arg.is_valid());
 
-        args = { "piet", "-i", std::to_string(i) };
+        args = { programName, "-i", std::to_string(i) };
         cli.parse(args);
         EXPECT_TRUE(arg.is_valid());
     }
@@ -241,11 +243,11 @@ namespace px_tests
         auto& arg = cli.add_value_argument<int>("some integer", "-i");
 
         constexpr auto i = 5;
-        std::vector<std::string> args = { "piet" };
+        std::vector<std::string> args = { programName };
         cli.parse(args);
         EXPECT_TRUE(arg.is_valid());
 
-        args = { "piet", "-i", std::to_string(i) };
+        args = { programName, "-i", std::to_string(i) };
         cli.parse(args);
         EXPECT_TRUE(arg.is_valid());
     }
@@ -257,7 +259,7 @@ namespace px_tests
             .set_validator(validator);
 
         constexpr auto i = 5;
-        const std::vector<std::string> args = { "piet", "-i", std::to_string(i) };
+        const std::vector<std::string> args = { programName, "-i", std::to_string(i) };
         cli.parse(args);
         EXPECT_TRUE(arg.is_valid());
 
@@ -269,7 +271,7 @@ namespace px_tests
     {
         auto& arg = cli.add_value_argument<std::filesystem::path>("pth", "-p")
             .set_validator([](auto pth) { return std::filesystem::exists(pth); });
-        std::vector<std::string> args = { "piet", "-p", std::filesystem::current_path().string() };
+        std::vector<std::string> args = { programName, "-p", std::filesystem::current_path().string() };
         cli.parse(args);
         EXPECT_TRUE(arg.is_valid());
 
@@ -295,11 +297,11 @@ namespace px_tests
 
     TEST_F(px_flag_arg_test, can_parse_flag_arg)
     {
-        std::vector<std::string> args = { "piet" };
+        std::vector<std::string> args = { programName };
         cli.parse(args);
         EXPECT_FALSE(flag_arg->get().get_value());
 
-        args = { "piet", "-f" };
+        args = { programName, "-f" };
         cli.parse(args);
         EXPECT_TRUE(flag_arg->get().get_value());
     }
@@ -307,13 +309,13 @@ namespace px_tests
     TEST_F(px_flag_arg_test, can_store_value_in_bound_variable)
     {
         bool q = false;
-        std::vector<std::string> args = { "piet" };
+        std::vector<std::string> args = { programName };
         flag_arg->get().bind(&q);
         cli.parse(args);
         EXPECT_FALSE(flag_arg->get().get_value());
         EXPECT_FALSE(q);
 
-        args = { "piet", "-f" };
+        args = { programName, "-f" };
         cli.parse(args);
         EXPECT_TRUE(flag_arg->get().get_value());
         EXPECT_TRUE(q);
@@ -329,7 +331,7 @@ namespace px_tests
 
         auto make_multi_arg() const
         {
-            std::vector<std::string> args = { "piet", "--ints" };
+            std::vector<std::string> args = { programName, "--ints" };
             for (const auto& i : v)
             {
                 args.push_back(std::to_string(i));
@@ -353,7 +355,7 @@ namespace px_tests
     {
         auto& arg = cli.add_multi_value_argument<std::string>("multiple strings", "--strings");
 
-	std::vector<std::string> args = { "piet", "--strings", "s0", "s1", "s2", "s3" };
+	std::vector<std::string> args = { programName, "--strings", "s0", "s1", "s2", "s3" };
         cli.parse(args);
         EXPECT_EQ(4, arg.get_value().size());
     }

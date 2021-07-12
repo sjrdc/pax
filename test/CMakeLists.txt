@@ -1,7 +1,7 @@
 enable_testing()
-find_package(GTest REQUIRED)
 
 add_executable(testpx testpx.cpp testmain.cpp)
-target_link_libraries(testpx GTest::GTest GTest::Main)
+target_link_libraries(testpx gtest_main)
 
-add_test(AllTestsInFoo testpx)
+include(GoogleTest)
+gtest_discover_tests(testpx)

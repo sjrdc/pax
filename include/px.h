@@ -601,12 +601,15 @@ namespace px
 
 #ifdef PX_HAS_SPAN
     inline void command_line::parse(std::span<const std::string> args)
+    {
+        const auto end = args.end();
+        auto argv = args.begin();
 #else
     inline void command_line::parse(const std::vector<std::string>& args)
-#endif
     {
         const auto end = args.cend();
         auto argv = args.cbegin();
+#endif
 
 	const auto parse_all = [](auto& args, auto& argv, const auto& end)
 	{
@@ -630,7 +633,7 @@ namespace px
 
             if (!positional_arguments.empty())
             {
-		for (argv = (!separator_found) ? std::next(args.cbegin()) : argv;
+		for (argv = (!separator_found) ? std::next(args.begin()) : argv;
 		     argv != end; ++argv)
 		{
 		    argv = parse_all(positional_arguments, argv, end);

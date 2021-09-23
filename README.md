@@ -12,6 +12,8 @@
 [![Issues][issues-shield]][issues-url]
 [![GPLv3 License][license-shield]][license-url]
 
+[![build and test](https://github.com/sjrdc/px/actions/workflows/cmake.yml/badge.svg)](https://github.com/sjrdc/px/actions/workflows/cmake.yml)
+
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 

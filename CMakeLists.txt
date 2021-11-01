@@ -6,8 +6,27 @@ set(CMAKE_CXX_STANDARD 20)
 set(CXX_STANDARD_REQUIRED)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
+add_library(px INTERFACE)
+target_include_directories(px INTERFACE 
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    "${PROJECT_BINARY_DIR}/pxConfigVersion.cmake"
+    VERSION 0.1
+    COMPATIBILITY AnyNewerVersion
+)
 
-message(STATUS ${CMAKE_CXX_COMPILER_ID})
+install(TARGETS px
+    EXPORT pxTargets
+    LIBRARY DESTINATION lib COMPONENT Runtime
+    ARCHIVE DESTINATION lib COMPONENT Development
+    RUNTIME DESTINATION bin COMPONENT Runtime
+    PUBLIC_HEADER DESTINATION include COMPONENT Development
+    BUNDLE DESTINATION bin COMPONENT Runtime
+)
+
 add_executable(example example/example.cpp)
 if (UNIX AND NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL "AppleClang")
    target_link_libraries(example stdc++fs)

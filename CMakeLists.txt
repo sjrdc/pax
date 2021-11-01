@@ -44,5 +44,6 @@ add_executable(example example/example.cpp)
 if (UNIX AND NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL "AppleClang")
    target_link_libraries(example stdc++fs)
 endif()
+target_link_libraries(example px)
 
 add_subdirectory(test)

@@ -28,7 +28,7 @@
 #include <memory>
 #include <optional>
 #include <sstream>
-#if __has_include(<span>)
+#if __has_include(<span>) && _CPLUSPLUS >= 202002L
 #include <span>
 #define PX_HAS_SPAN
 #endif

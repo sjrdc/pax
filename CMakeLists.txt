@@ -27,6 +27,19 @@ install(TARGETS px
     BUNDLE DESTINATION bin COMPONENT Runtime
 )
 
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+    "${PROJECT_SOURCE_DIR}/cmake/pxConfig.cmake.in"
+    "${PROJECT_BINARY_DIR}/pxConfig.cmake"
+    INSTALL_DESTINATION lib/cmake/mylib
+)
+
+install(EXPORT pxTargets DESTINATION lib/cmake/px)
+install(FILES "${PROJECT_BINARY_DIR}/pxConfigVersion.cmake"
+              "${PROJECT_BINARY_DIR}/pxConfig.cmake"
+        DESTINATION lib/cmake/px)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION include)
+
 add_executable(example example/example.cpp)
 if (UNIX AND NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL "AppleClang")
    target_link_libraries(example stdc++fs)

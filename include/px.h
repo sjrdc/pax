@@ -188,7 +188,7 @@ namespace px
         using base = argument<positional_argument<T>>;
 
         positional_argument(std::string_view n);
-        virtual ~positional_argument<T>() = default;
+        virtual ~positional_argument() = default;
 
         void print_help(std::ostream&) const override;
         argv_iterator parse(const argv_iterator&, const argv_iterator&) override;

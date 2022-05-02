@@ -32,3 +32,7 @@ build
 *.exe
 *.out
 *.app
+bazel-bin
+bazel-out
+bazel-px
+bazel-testlogs

@@ -382,7 +382,7 @@ namespace px_tests
     TEST_F(px_multi_value_arg_test, can_store_integral_value_in_bound_variable)
     {
         std::vector<int> q;
-        auto& arg = cli.add_multi_value_argument<int>("some integer", "--ints")
+        cli.add_multi_value_argument<int>("some integer", "--ints")
             .bind(&q);
 
         cli.parse(make_multi_arg());

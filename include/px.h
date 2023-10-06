@@ -28,10 +28,7 @@
 #include <memory>
 #include <optional>
 #include <sstream>
-#if __has_include(<span>) && _CPLUSPLUS >= 202002L
 #include <span>
-#define PX_HAS_SPAN
-#endif
 #include <string_view>
 #include <vector>
 #include <iterator>
@@ -145,11 +142,7 @@ namespace px
         value_type value;
     };
 
-#ifdef PX_HAS_SPAN
     using argv_iterator = std::span<const std::string>::iterator;
-#else
-    using argv_iterator = std::vector<std::string>::const_iterator;
-#endif
     class iargument
     {
     public:
@@ -259,11 +252,7 @@ namespace px
         positional_argument<T>& add_positional_argument(std::string_view);
 
         void print_help(std::ostream&);
-#ifdef PX_HAS_SPAN
         void parse(std::span<const std::string>);
-#else
-        void parse(const std::vector<std::string>&);
-#endif
         void parse(int argc, char** argv);
 
     private:
@@ -598,17 +587,10 @@ namespace px
         return ref;
     }
 
-#ifdef PX_HAS_SPAN
     inline void command_line::parse(std::span<const std::string> args)
     {
         const auto end = args.end();
         auto argv = args.begin();
-#else
-    inline void command_line::parse(const std::vector<std::string>& args)
-    {
-        const auto end = args.cend();
-        auto argv = args.cbegin();
-#endif
 
         const auto parse_all = [](auto& args, auto& argv, const auto& end)
         {

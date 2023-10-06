@@ -103,7 +103,7 @@ namespace px
         bool has_value() const;
         const value_type& get_value() const;
         template <typename iterator>
-        iterator parse(const iterator& begin, const iterator& end);
+        std::input_iterator<std::string> parse(const std::input_iterator<std::string>& begin, const std::input_iterator<std::string>& end);
 
     private:
         std::optional<value_type> value = std::nullopt;

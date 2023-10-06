@@ -61,18 +61,18 @@ int main(int argc, char **argv)
 		if (help_arg.get_value())
 		{
 			cli.print_help(std::cout);
-			return 0;
+			return EXIT_SUCCESS;
 		}
 		else
 		{
 			std::cerr << e.what() << "\n\n";
 			cli.print_help(std::cerr);
-			return 1;
+			return EXIT_FAILURE;
 		}
 	}
 
 	show_kittens(i);
 	store_kittens(pth);
 
-	return 0;
+	return EXIT_SUCCESS;
 }

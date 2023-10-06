@@ -40,7 +40,7 @@ namespace detail
 {
     auto pad_right(std::string_view s, decltype(s.size()) n)
     {
-	constexpr decltype(s.size()) zero {0};
+    constexpr decltype(s.size()) zero {0};
         return std::string(s).append(std::max(zero, n - s.size()), ' ');
     }
 
@@ -376,7 +376,7 @@ namespace px
 
     template <typename T>
     positional_argument<T>::positional_argument(std::string_view n) :
-	positional_argument<T>::base(n)
+    positional_argument<T>::base(n)
     {
     }
     
@@ -391,9 +391,9 @@ namespace px
     void positional_argument<T>::print_help(std::ostream& o) const
     {
         o << "   "
-	  << base::get_name() << " "
-	  << base::get_description()
-	  << "\n";
+      << base::get_name() << " "
+      << base::get_description()
+      << "\n";
     }
 
     template <typename T>
@@ -564,18 +564,18 @@ namespace px
     inline positional_argument<T>& command_line::add_positional_argument(std::string_view name)
     {
         auto arg = std::make_unique<positional_argument<T>>(name);
-	auto& ref = *arg;
+        auto& ref = *arg;
         positional_arguments.push_back(std::move(arg));
-	return ref;
+        return ref;
     }
 
     inline tag_argument<bool, scalar<bool>>& command_line::add_flag_argument(std::string_view name, std::string_view tag)
     {
         prevent_tag_args_after_positional_args();
         auto arg = std::make_unique<tag_argument<bool, scalar<bool>>>(name, tag);
-	auto& ref = *arg;
+        auto& ref = *arg;
         arguments.push_back(std::move(arg));
-	return ref;
+        return ref;
     }
 
     template <typename T>
@@ -583,9 +583,9 @@ namespace px
     {
         prevent_tag_args_after_positional_args();
         auto arg = std::make_unique<tag_argument<T>>(name, tag);
-	auto& ref = *arg;
+        auto& ref = *arg;
         arguments.push_back(std::move(arg));
-	return ref;
+        return ref;
     }
 
     template <typename T>
@@ -593,11 +593,10 @@ namespace px
     {
         prevent_tag_args_after_positional_args();
         auto arg = std::make_unique<tag_argument<T, multi_scalar<T>>>(name, tag);
-	auto& ref = *arg;
+        auto& ref = *arg;
         arguments.push_back(std::move(arg));
-	return ref;
+        return ref;
     }
-
 
 #ifdef PX_HAS_SPAN
     inline void command_line::parse(std::span<const std::string> args)
@@ -611,33 +610,33 @@ namespace px
         auto argv = args.cbegin();
 #endif
 
-	const auto parse_all = [](auto& args, auto& argv, const auto& end)
-	{
-	    std::for_each(args.begin(), args.end(), 
-			  [&argv, &end](auto& arg) { argv = arg->parse(argv, end); });
-	    return argv;
-	};
-	
+        const auto parse_all = [](auto& args, auto& argv, const auto& end)
+        {
+            std::for_each(args.begin(), args.end(), 
+                [&argv, &end](auto& arg) { argv = arg->parse(argv, end); });
+            return argv;
+        };
+    
         if (std::distance(argv, end) > 0)
         {
-	    auto separator_found = false;
-	    ++argv;
+            auto separator_found = false;
+            ++argv;
             for (; argv != end && !separator_found; ++argv)
             {
-		separator_found = detail::is_separator_tag(*argv);
+                separator_found = detail::is_separator_tag(*argv);
                 if (!separator_found)
                 {
-		    argv = parse_all(arguments, argv, end);
-		}
+                    argv = parse_all(arguments, argv, end);
+                }
             }
 
             if (!positional_arguments.empty())
             {
-		for (argv = (!separator_found) ? std::next(args.begin()) : argv;
-		     argv != end; ++argv)
-		{
-		    argv = parse_all(positional_arguments, argv, end);
-		}
+                for (argv = (!separator_found) ? std::next(args.begin()) : argv;
+                    argv != end; ++argv)
+                {
+                    argv = parse_all(positional_arguments, argv, end);
+                }
             }
         }
 
@@ -655,8 +654,8 @@ namespace px
         o << name
             << ((!description.empty()) ? " - " + description : "")
             << "\n";
-	std::for_each(std::begin(arguments), std::end(arguments),
-		      [&o](const auto& arg) { arg->print_help(o); });
+        std::for_each(std::begin(arguments), std::end(arguments),
+              [&o](const auto& arg) { arg->print_help(o); });
         o << "\n";
     }
 

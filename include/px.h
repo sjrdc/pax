@@ -331,10 +331,8 @@ namespace px
             {
                 value.push_back(detail::parse_scalar<T>(*i));
             }
-
             --i;
         }
-
         return i;
     }
 
@@ -380,9 +378,9 @@ namespace px
     void positional_argument<T>::print_help(std::ostream& o) const
     {
         o << "   "
-      << base::get_name() << " "
-      << base::get_description()
-      << "\n";
+            << base::get_name() << " "
+            << base::get_description()
+            << "\n";
     }
 
     template <typename T>

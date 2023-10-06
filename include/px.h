@@ -20,10 +20,6 @@
 
 #include <algorithm>
 #include <cctype>
-#if __has_include(<format>)
-#include <format>
-#define PX_HAS_FORMAT
-#endif
 #include <functional>
 #include <memory>
 #include <optional>
@@ -32,12 +28,13 @@
 #include <string_view>
 #include <vector>
 #include <iterator>
+#include <concepts>
 
 namespace detail
 {
     auto pad_right(std::string_view s, decltype(s.size()) n)
     {
-    constexpr decltype(s.size()) zero {0};
+        constexpr decltype(s.size()) zero {0};
         return std::string(s).append(std::max(zero, n - s.size()), ' ');
     }
 
@@ -82,16 +79,14 @@ namespace detail
              (is_short_tag(s) || is_alternate_tag(s));
     }
 
-    template <typename iterator>
-    auto find_invalid(const iterator& begin, const iterator& end)
+    auto find_invalid(const auto& begin, const auto& end)
     {
         return std::find_if_not(begin, end, [](auto& arg) { return arg->is_valid(); });
     }
 
-    template <typename iterator>
-    void throw_on_invalid(const iterator& begin, const iterator& end)
+    void throw_on_invalid(const auto& begin, const auto& end)
     {
-        if (iterator invalid_arg = find_invalid(begin, end); invalid_arg != end)
+        if (auto invalid_arg = find_invalid(begin, end); invalid_arg != end)
         {
             throw std::runtime_error("argument '" + (*invalid_arg)->get_name() + "' invalid after parsing");
         }

@@ -102,8 +102,8 @@ namespace px
         using value_type = T;
         bool has_value() const;
         const value_type& get_value() const;
-        template <typename iterator>
-        std::input_iterator<std::string> parse(const std::input_iterator<std::string>& begin, const std::input_iterator<std::string>& end);
+        template <std::input_iterator iterator>
+        iterator parse(const iterator& begin, const iterator& end);
 
     private:
         std::optional<value_type> value = std::nullopt;
@@ -116,7 +116,7 @@ namespace px
         using value_type = bool;
         bool has_value() const;
         const value_type& get_value() const;
-        template <typename iterator>
+        template <std::input_iterator iterator>
         iterator parse(const iterator& begin, const iterator& end);
     private:
         bool value = false;
@@ -130,7 +130,7 @@ namespace px
         bool has_value() const;
         const value_type& get_value() const;
 
-        template <typename iterator>
+        template <std::input_iterator iterator>
         iterator parse(const iterator& begin, const iterator& end);
 
     private:
@@ -279,7 +279,7 @@ namespace px
     }
 
     template <typename T>
-    template <typename iterator>
+    template <std::input_iterator iterator>
     iterator scalar<T>::parse(const iterator& begin, const iterator& end)
     {
         value = detail::parse_scalar<T>(*begin);
@@ -296,7 +296,7 @@ namespace px
         return true;
     }
 
-    template <typename iterator>
+    template <std::input_iterator iterator>
     iterator scalar<bool>::parse(const iterator& begin, const iterator& end)
     {
         value = true;
@@ -316,7 +316,7 @@ namespace px
     }
 
     template <typename T>
-    template <typename iterator>
+    template <std::input_iterator iterator>
     iterator multi_scalar<T>::parse(const iterator& begin, const iterator& end)
     {
         auto i = begin;

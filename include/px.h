@@ -17,7 +17,6 @@
  */
 
 #pragma once
-
 #include <algorithm>
 #include <cctype>
 #include <functional>
@@ -150,7 +149,6 @@ namespace px
         virtual const std::string& get_description() const = 0;
     };
 
-    template <typename Derived>
     class argument : public iargument
     {
     public:
@@ -159,21 +157,21 @@ namespace px
 
         const std::string& get_name() const override;
         const std::string& get_description() const override;
-        Derived& set_description(std::string_view d);
+        template <typename Self>
+        auto&& set_description(this Self&& self, std::string_view d);
 
     private:
-        Derived* this_as_derived() { return reinterpret_cast<Derived*>(this); }
         std::string name;
         std::string description;
     };
 
     template <typename T>
-    class positional_argument : public argument<positional_argument<T>>
+    class positional_argument : public argument
     {
     public:
         using value_type = T;
         using validation_function = std::function<bool(const value_type&)>;
-        using base = argument<positional_argument<T>>;
+        using base = argument;
 
         positional_argument(std::string_view n);
         virtual ~positional_argument() = default;
@@ -194,12 +192,12 @@ namespace px
     };
 
     template <typename T, typename storage = scalar<T>>
-    class tag_argument : public argument<tag_argument<T, storage>>
+    class tag_argument : public argument
     {
     public:
         using value_type = typename storage::value_type;
         using validation_function = std::function<bool(const value_type&)>;
-        using base = argument<tag_argument<T, storage>>;
+        using base = argument;
 
         tag_argument(std::string_view n, std::string_view t);
         virtual ~tag_argument() = default;
@@ -280,7 +278,7 @@ namespace px
 
     template <typename T>
     template <std::input_iterator iterator>
-    iterator scalar<T>::parse(const iterator& begin, const iterator& end)
+    iterator scalar<T>::parse(const iterator& begin, const iterator&)
     {
         value = detail::parse_scalar<T>(*begin);
         return begin;
@@ -297,7 +295,7 @@ namespace px
     }
 
     template <std::input_iterator iterator>
-    iterator scalar<bool>::parse(const iterator& begin, const iterator& end)
+    iterator scalar<bool>::parse(const iterator& begin, const iterator&)
     {
         value = true;
         return begin;
@@ -331,27 +329,24 @@ namespace px
         return i;
     }
 
-    template <typename T>
-    inline argument<T>::argument(std::string_view n) :
+    inline argument::argument(std::string_view n) :
         name(n)
     {
     }
 
-    template <typename T>
-    inline const std::string& argument<T>::get_name() const
+    inline const std::string& argument::get_name() const
     {
         return name;
     }
 
-    template <typename T>
-    inline T& argument<T>::set_description(std::string_view d)
+    template <typename Self>
+    inline auto&& argument::set_description(this Self&& self, std::string_view d)
     {
-        description = d;
-        return *this_as_derived();
+        self.description = d;
+        return std::forward<Self>(self);
     }
 
-    template <typename T>
-    inline const std::string& argument<T>::get_description() const
+    inline const std::string& argument::get_description() const
     {
         return description;
     }
@@ -406,7 +401,7 @@ namespace px
     template <typename T>
     argv_iterator
         positional_argument<T>::parse(const argv_iterator& begin,
-            const argv_iterator& end)
+            const argv_iterator&)
     {
         value = detail::parse_scalar<value_type>(*begin);
         if (bound_variable != nullptr)
@@ -443,7 +438,7 @@ namespace px
 
     template <typename T, typename storage>
     tag_argument<T, storage>::tag_argument(std::string_view n, std::string_view t) :
-        argument<tag_argument<T, storage>>(n),
+        argument(n),
         tag(t)
     {
     }

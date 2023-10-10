@@ -28,7 +28,7 @@ This is meant to be an excercise in the use of some C++17 and C++20 features, as
 ### px is built with
 
 * [love](https://www.youtube.com/watch?v=f_HmF84G7ZY)
-* [standard C++20](https://isocpp.org)
+* [standard C++23](https://isocpp.org)
 * [cmake](https://cmake.org) >= 3.14
 * [google test](https://github.com/google/googletest) >= 1.10
 

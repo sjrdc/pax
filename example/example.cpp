@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "px.h"
+import px;
 
 #include <filesystem>
 #include <iostream>
@@ -51,6 +51,7 @@ int main(int argc, char **argv)
 		.bind(&pth)
 		.set_validator([](auto &p)
 					   { return fs::exists(p) && fs::is_regular_file(p); });
+	cli.add_value_argument<double>("piet", "q");
 
 	try
 	{

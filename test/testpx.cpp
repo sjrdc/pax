@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "px.h"
+import px;
 
 #include <gtest/gtest.h>
 #include <filesystem>

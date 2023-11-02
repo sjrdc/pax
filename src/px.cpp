@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#pragma once
+module;
 
 #include <algorithm>
 #include <cctype>
@@ -29,6 +29,8 @@
 #include <vector>
 #include <iterator>
 #include <concepts>
+
+export module px;
 
 namespace detail
 {
@@ -93,7 +95,7 @@ namespace detail
     }
 }
 
-namespace px
+export namespace px
 {
     template <typename T>
     class scalar
